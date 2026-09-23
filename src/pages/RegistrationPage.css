@@ -1,0 +1,32 @@
+/* neat purple background */
+.register-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+  background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-background)); /*came from index.css*/
+}
+
+/* box that started it all */
+.register-card {
+  width: 100%;
+  max-width: 448px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.register-title {
+  margin: 0;
+  font-size: 24px;
+  text-align: center;
+}
+
+.register-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
