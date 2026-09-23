@@ -1,0 +1,48 @@
+name: Discord commit feed
+
+on: push
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post each commit (with description) to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          node <<'EOF'
+          const fs = require('fs')
+
+          const event = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'))
+          const repo = process.env.GITHUB_REPOSITORY
+          const branch = process.env.GITHUB_REF_NAME
+
+          ;(async () => {
+            for (const commit of event.commits ?? []) {
+              // First line = summary, everything after = description
+              const [summary, ...rest] = commit.message.split('\n')
+              const description = rest.join('\n').trim()
+
+              const embed = {
+                title: summary.slice(0, 256),
+                url: commit.url,
+                author: { name: commit.author.name },
+                color: 0x7752a1,
+                footer: { text: `${repo} · ${branch} · ${commit.id.slice(0, 7)}` },
+                timestamp: commit.timestamp,
+              }
+              if (description) embed.description = description.slice(0, 4000)
+
+              const res = await fetch(process.env.DISCORD_WEBHOOK, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] }),
+              })
+              if (!res.ok) {
+                console.error(`Discord returned ${res.status}: ${await res.text()}`)
+                process.exitCode = 1
+              }
+              await new Promise((r) => setTimeout(r, 1000)) // stay under Discord's rate limit
+            }
+          })()
+          EOF
