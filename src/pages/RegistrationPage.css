@@ -1,0 +1,171 @@
+/* neat purple background */
+.register-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+  background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-background)); /*came from index.css*/
+}
+
+/* box that started it all */
+.register-card {
+  width: 100%;
+  max-width: 448px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.register-title {
+  margin: 0;
+  font-size: 24px;
+  text-align: center;
+}
+
+.register-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+/* ---------- Form layout ---------- */
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.required {
+  color: var(--color-danger);
+}
+
+/* ---------- Inputs ---------- */
+
+.field-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background); /* slightly darker than the card so it looks recessed */
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 14px;
+}
+
+.field-input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
+/* keyboard users need to see which field they're in */
+.field-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.field-input.invalid {
+  border-color: var(--color-danger);
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+  font-size: 12px;
+}
+
+.field-hint {
+  color: var(--color-muted-foreground);
+}
+
+.field-error {
+  margin-top: 4px;
+  color: var(--color-danger);
+}
+
+/* ---------- Checkboxes ---------- */
+
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+/* ---------- Button + footer ---------- */
+
+.btn-primary {
+  height: 48px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* the success screen's button is a link styled like the button */
+.btn-link {
+  display: grid;
+  place-items: center;
+  margin-top: 20px;
+  text-decoration: none;
+}
+
+.register-footer {
+  margin: 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+.register-footer a {
+  color: var(--color-primary-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.register-footer a:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,222 @@
+import { useState } from 'react'
+import './RegistrationPage.css'
+
+const NAME_MAX = 60
+const EMAIL_MAX = 254
+const PHONE_MAX = 20
+
+// ---------- Validation helpers ----------
+// Each returns an error message, or '' when the value is valid.
+
+/** Returns the 10-digit US number, or null if it isn't valid. Accepts (713) 555-0123, 713-555-0123, +1 713..., etc. */
+function normalizePhone(value) {
+  const digits = value.replace(/\D/g, '') // keep only 0-9
+  const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
+  return /^[2-9]\d{9}$/.test(ten) ? ten : null // area codes never start with 0 or 1
+}
+
+function validateName(value) {
+  const name = value.trim()
+  if (!name) return 'Name is required.'
+  if (name.length > NAME_MAX) return `Name must be ${NAME_MAX} characters or fewer.`
+  // \p{L} = a letter in any language, so names like "José" pass
+  if (!/^[\p{L}\s'.-]+$/u.test(name)) return "Name can only contain letters, spaces, apostrophes, periods and hyphens."
+  return ''
+}
+
+function validatePhone(value) {
+  if (!value.trim()) return 'Phone number is required.'
+  return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
+}
+
+function validateEmail(value) {
+  const email = value.trim()
+  if (!email) return '' // optional
+  if (email.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Enter a valid email address.'
+}
+
+function validateTerms(checked) {
+  return checked ? '' : 'You must accept the terms to continue.'
+}
+
+const validators = {
+  name: (form) => validateName(form.name),
+  phone: (form) => validatePhone(form.phone),
+  email: (form) => validateEmail(form.email),
+  terms: (form) => validateTerms(form.terms),
+}
+
+function isValid(errors) {
+  return Object.values(errors).every((message) => !message)
+}
+
+// ---------- Reusable text field ----------
+
+/** Label + input + (error or hint), with the accessibility wiring done once. */
+function TextField({ id, label, required, hint, error, ...inputProps }) {
+  const messageId = `${id}-msg`
+  return (
+    <div className="field">
+      <label htmlFor={id} className="field-label">
+        {label}
+        {required && <span className="required"> *</span>}
+      </label>
+      <input
+        id={id}
+        className={error ? 'field-input invalid' : 'field-input'}
+        aria-invalid={!!error}
+        aria-describedby={error || hint ? messageId : undefined}
+        {...inputProps}
+      />
+      {error ? (
+        <p id={messageId} className="field-error" role="alert">{error}</p>
+      ) : hint ? (
+        <p id={messageId} className="field-hint">{hint}</p>
+      ) : null}
+    </div>
+  )
+}
+
+// ---------- Page ----------
+
+/** Registration for users signing up with a phone number instead of Google. */
+function RegistrationPage() {
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    smsOptIn: true,
+    terms: false,
+  })
+  const [errors, setErrors] = useState({})
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  // Update a field; if it's already showing an error, re-check it live so the error clears as they fix it.
+  const handleChange = (key) => (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    const next = { ...form, [key]: value }
+    setForm(next)
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: validators[key](next) }))
+  }
+
+  // Check a field when the user leaves it.
+  const handleBlur = (key) => () => {
+    setErrors((prev) => ({ ...prev, [key]: validators[key](form) }))
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const nextErrors = Object.fromEntries(Object.entries(validators).map(([key, check]) => [key, check(form)]))
+    setErrors(nextErrors)
+    if (!isValid(nextErrors)) return
+
+    setBusy(true)
+    // TODO(A3): replace this fake delay with the real sign-up call once the Login/auth side exists.
+    // The data to send is: name, normalizePhone(form.phone), email, smsOptIn.
+    await new Promise((resolve) => setTimeout(resolve, 800))
+    setBusy(false)
+    setDone(true)
+  }
+
+  if (done) {
+    return (
+      <div className="register-page">
+        <div className="register-card">
+          <h1 className="register-title">You're all set, {form.name.trim().split(' ')[0]}!</h1>
+          <p className="register-subtitle">
+            Your account is ready. We'll text {form.phone} when your table is ready.
+          </p>
+          <a href="/login" className="btn-primary btn-link">Continue to sign in</a>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="register-page">
+      <div className="register-card">
+        <h1 className="register-title">Create your account</h1>
+        <p className="register-subtitle">No Google account? Sign up with your phone number.</p>
+
+        <form className="register-form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            id="reg-name"
+            label="Full name"
+            required
+            error={errors.name}
+            type="text"
+            autoComplete="name"
+            maxLength={NAME_MAX}
+            placeholder="Jordan Lee"
+            value={form.name}
+            onChange={handleChange('name')}
+            onBlur={handleBlur('name')}
+          />
+          <TextField
+            id="reg-phone"
+            label="Phone number"
+            required
+            hint="Used to sign in and for table-ready texts."
+            error={errors.phone}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={PHONE_MAX}
+            placeholder="(713) 555-0123"
+            value={form.phone}
+            onChange={handleChange('phone')}
+            onBlur={handleBlur('phone')}
+          />
+          <TextField
+            id="reg-email"
+            label="Email"
+            hint="Optional, for receipts when you skip the line."
+            error={errors.email}
+            type="email"
+            autoComplete="email"
+            maxLength={EMAIL_MAX}
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={handleChange('email')}
+            onBlur={handleBlur('email')}
+          />
+
+          <label className="checkbox-row">
+            <input type="checkbox" checked={form.smsOptIn} onChange={handleChange('smsOptIn')} />
+            <span>Text me queue updates (standard rates apply)</span>
+          </label>
+
+          <div>
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={form.terms}
+                onChange={handleChange('terms')}
+                aria-invalid={!!errors.terms}
+                aria-describedby={errors.terms ? 'reg-terms-msg' : undefined}
+              />
+              <span>
+                I agree to the Terms of Service and Privacy Policy<span className="required"> *</span>
+              </span>
+            </label>
+            {errors.terms && (
+              <p id="reg-terms-msg" className="field-error" role="alert">{errors.terms}</p>
+            )}
+          </div>
+
+          <button type="submit" className="btn-primary" disabled={busy}>
+            {busy ? 'Creating account…' : 'Create account'}
+          </button>
+
+          <p className="register-footer">
+            Already have an account? <a href="/login">Sign in</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+export default RegistrationPage
