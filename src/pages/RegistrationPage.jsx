@@ -20,7 +20,7 @@ function validateName(value) {
   if (!name) return 'Name is required.'
   if (name.length > NAME_MAX) return `Name must be ${NAME_MAX} characters or fewer.`
   // \p{L} = a letter in any language, so names like "José" pass
-  if (!/^[\p{L}\s'.-]+$/u.test(name)) return "Name can only contain letters, spaces, apostrophes, periods and hyphens."
+  if (!/^[\p{L}\s'.-]+$/u.test(name)) return "Name can only contain letters, pick a better name."
   return ''
 }
 
