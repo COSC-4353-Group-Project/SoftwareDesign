@@ -25,7 +25,7 @@ function validateName(value) {
 }
 
 function validatePhone(value) {
-  if (!value.trim()) return 'Phone number is required.'
+  if (!value.trim()) return 'Phone number is required buddy.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
 //same goes for the return, that was rough. 
