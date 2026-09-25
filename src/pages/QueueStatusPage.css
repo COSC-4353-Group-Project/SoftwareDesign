@@ -1,0 +1,55 @@
+/* page wrapper, this helps with different sized screens */
+.queue-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* title on the left, status on the right, gets pushed down on smaller screens */
+.queue-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* one column on phones, i dont like horizontle scrolling on mobile , main + 360px sidebar on wide screens */
+.queue-layout {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .queue-layout {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+.queue-main,
+.queue-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* placeholder boxes until i get spacing right.  */
+.queue-box {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+}
+
+.queue-box-title    { width: 220px; height: 32px; }
+.queue-box-subtitle { width: 160px; height: 20px; margin-top: 4px; }
+.queue-box-badge    { width: 110px; height: 26px; border-radius: 999px; }
+.queue-box-position { height: 360px; }
+.queue-box-skip     { height: 220px; }
+.queue-box-details  { height: 240px; }
+.queue-box-cancel   { height: 44px; }
+.queue-box-link     { height: 20px; border: none; background: none; }

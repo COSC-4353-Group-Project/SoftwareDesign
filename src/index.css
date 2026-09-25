@@ -13,6 +13,10 @@
 
   --color-danger: #f87171;           /* error messages important */
 
+  --color-orange: #ffbb55;           /* orange text/icons */
+  --color-orange-soft: #2a1f14;      /* orange tinted backgrounds */
+  --color-orange-border: #8a5d1c;
+
   color-scheme: dark;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
 }

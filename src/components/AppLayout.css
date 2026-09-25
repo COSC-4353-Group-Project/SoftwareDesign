@@ -1,0 +1,66 @@
+.app-layout {
+  min-height: 100dvh;
+}
+
+/* stays pinned to the top while the page scrolls */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* same max width as the page content, so the bar lines up with it */
+.top-bar-inner {
+  max-width: 1100px;
+  height: 56px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-bar-nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* hide the nav links and user name on phones */
+@media (max-width: 639px) {
+  .top-bar-nav,
+  .bar-box-user {
+    display: none;
+  }
+}
+
+/* placeholder boxes (temporary, delete once real content goes in) */
+.bar-box {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.bar-box-logo { width: 130px; }
+.bar-box-link { width: 90px; }
+.bar-box-user { width: 110px; }
+.bar-box-icon { width: 32px; }
+
+.bar-box-queue {
+  color: var(--color-orange);
+  border-color: var(--color-orange-border);
+  background: var(--color-orange-soft);
+}
