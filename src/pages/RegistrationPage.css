@@ -31,7 +31,7 @@
   color: var(--color-muted-foreground);
 }
 
-/* ---------- Form layout ---------- */
+/*  Form layout  */
 
 .register-form {
   display: flex;
@@ -55,7 +55,7 @@
   color: var(--color-danger);
 }
 
-/* ---------- Inputs ---------- */
+/*  Inputs  */
 
 .field-input {
   height: 40px;
@@ -72,7 +72,7 @@
   color: var(--color-muted-foreground);
 }
 
-/* keyboard users need to see which field they're in */
+/* see which field they in */
 .field-input:focus {
   outline: none;
   border-color: var(--color-primary);
@@ -98,7 +98,7 @@
   color: var(--color-danger);
 }
 
-/* ---------- Checkboxes ---------- */
+/*  checkboxes  */
 
 .checkbox-row {
   display: flex;
@@ -116,7 +116,7 @@
   accent-color: var(--color-primary);
 }
 
-/* ---------- Button + footer ---------- */
+/*  Button and footer  */
 
 .btn-primary {
   height: 48px;
@@ -145,7 +145,7 @@
   cursor: not-allowed;
 }
 
-/* the success screen's button is a link styled like the button */
+/* going to remove this when other pages get built... */
 .btn-link {
   display: grid;
   place-items: center;

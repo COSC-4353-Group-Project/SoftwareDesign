@@ -5,10 +5,10 @@ const NAME_MAX = 60
 const EMAIL_MAX = 254
 const PHONE_MAX = 20
 
-// ---------- Validation helpers ----------
+//  Validation helpers 
 // Each returns an error message, or '' when the value is valid.
 
-/** Returns the 10-digit US number, or null if it isn't valid. Accepts (713) 555-0123, 713-555-0123, +1 713..., etc. */
+/** Should help with user validation*/
 function normalizePhone(value) {
   const digits = value.replace(/\D/g, '') // keep only 0-9
   const ten = digits.length === 11 && digits.startsWith('1') ? digits.slice(1) : digits
@@ -19,7 +19,7 @@ function validateName(value) {
   const name = value.trim()
   if (!name) return 'Name is required.'
   if (name.length > NAME_MAX) return `Name must be ${NAME_MAX} characters or fewer.`
-  // \p{L} = a letter in any language, so names like "José" pass
+  // \p{L} = a letter in any language, so names like "José" pass (had to look this one up)
   if (!/^[\p{L}\s'.-]+$/u.test(name)) return "Name can only contain letters, pick a better name."
   return ''
 }
@@ -28,7 +28,7 @@ function validatePhone(value) {
   if (!value.trim()) return 'Phone number is required.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
-
+//same goes for the return, that was rough. 
 function validateEmail(value) {
   const email = value.trim()
   if (!email) return '' // optional
@@ -37,7 +37,7 @@ function validateEmail(value) {
 }
 
 function validateTerms(checked) {
-  return checked ? '' : 'You must accept the terms to continue.'
+  return checked ? '' : 'You must accept the terms without reading to continue.'
 }
 
 const validators = {
@@ -51,7 +51,7 @@ function isValid(errors) {
   return Object.values(errors).every((message) => !message)
 }
 
-// ---------- Reusable text field ----------
+//  Reusable text field 
 
 /** Label + input + (error or hint), with the accessibility wiring done once. */
 function TextField({ id, label, required, hint, error, ...inputProps }) {
@@ -78,7 +78,7 @@ function TextField({ id, label, required, hint, error, ...inputProps }) {
   )
 }
 
-// ---------- Page ----------
+// Page 
 
 /** Registration for users signing up with a phone number instead of Google. */
 function RegistrationPage() {
@@ -113,7 +113,7 @@ function RegistrationPage() {
     if (!isValid(nextErrors)) return
 
     setBusy(true)
-    // TODO(A3): replace this fake delay with the real sign-up call once the Login/auth side exists.
+    // this will be replaced when the backend is built. 
     // The data to send is: name, normalizePhone(form.phone), email, smsOptIn.
     await new Promise((resolve) => setTimeout(resolve, 800))
     setBusy(false)
@@ -133,7 +133,7 @@ function RegistrationPage() {
       </div>
     )
   }
-
+//big stuff below.
   return (
     <div className="register-page">
       <div className="register-card">
@@ -172,14 +172,14 @@ function RegistrationPage() {
           <TextField
             id="reg-email"
             label="Email"
-            hint="Optional, for receipts when you skip the line."
+            hint="Optional, for receipts when you bribe skip the line."
             error={errors.email}
             type="email"
             autoComplete="email"
             maxLength={EMAIL_MAX}
             placeholder="you@example.com"
             value={form.email}
-            onChange={handleChange('email')}
+            onChange={handleChange('email')}  
             onBlur={handleBlur('email')}
           />
 
