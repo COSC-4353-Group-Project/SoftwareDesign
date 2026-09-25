@@ -18,9 +18,9 @@ jobs:
           const branch = process.env.GITHUB_REF_NAME
 
           ;(async () => {
-                        // Only post commits pushed for the first time (distinct), and skip merge commits
-            const isMerge = (c) => /^Merge (branch|pull request|remote-tracking branch) /.test(c.message)
-            for (const commit of (event.commits ?? []).filter((c) => c.distinct && !isMerge(c))) {
+            for (const commit of event.commits ?? []) {
+              if (!commit.distinct) continue // already posted when it was first pushed
+
               // First line = summary, everything after = description
               const [summary, ...rest] = commit.message.split('\n')
               const description = rest.join('\n').trim()
