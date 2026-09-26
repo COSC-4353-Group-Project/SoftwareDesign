@@ -19,7 +19,7 @@ function App() {
       </Route>
 
       <Route element={<AppLayout />}>
-        <Route path="/HistoryPage" element={<HistoryPage />} />
+        <Route path="/history" element={<HistoryPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

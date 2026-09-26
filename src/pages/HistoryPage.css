@@ -1,0 +1,59 @@
+/* page wrapper, this helps with different sized screens */
+.history-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.history-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* one column on phones, i dont like horizontle scrolling on mobile , main + 360px sidebar on wide screens */
+.history-layout {
+  display: grid;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .history-layout {
+    display: flex;
+    grid-template-columns: 1fr 360px;
+
+  }
+}
+
+.history-main,
+
+/* placeholder boxes until i get spacing right.  */
+.history-box {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+
+  width: 100%;
+  max-width: 800px;
+  min-height: 180px;
+  margin-inline: auto;
+}
+
+/* Labels to indicate "Service", "Date", "Bribe Amount", "Queue Status" */
+.history-box-labels {
+    display: grid;
+    justify-content: space-between;
+    grid-template-columns: 150px 150px 200px 100px;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    margin-bottom: -2;
+    font-size: 14px;
+}
