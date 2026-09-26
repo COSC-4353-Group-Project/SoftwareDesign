@@ -1,0 +1,94 @@
+/* neat purple background */
+.login-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+  background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-background)); 
+}
+
+.login-card {
+  width: 100%;
+  max-width: 448px;
+  padding: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 24px;
+  text-align: center;
+}
+
+.login-subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+/*  Form layout  */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-field-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/*  Inputs  */
+
+.login-field-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-background); /* slightly darker than the card so it looks recessed */
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 14px;
+}
+
+/*  Button and footer  */
+
+.login-btn-primary {
+  height: 48px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
+
+/*Google Button*/
+
+.goog-btn-primary {
+  height: 48px;
+  width: 100%;
+  border: 1px --color-primary;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms;
+}
