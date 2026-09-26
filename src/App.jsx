@@ -3,6 +3,7 @@ import AppLayout from './components/AppLayout.jsx'
 import RegistrationPage from './pages/RegistrationPage.jsx'
 import QueueStatusPage from './pages/QueueStatusPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import UserDashboard from './pages/UserDashboard.jsx'
 
 // One line per page. Teammates add their route here.
 function App() {
@@ -17,6 +18,7 @@ function App() {
       {/* with top bar: every page nested in here gets AppLayout around it */}
       <Route element={<AppLayout />}>
         <Route path="/status" element={<QueueStatusPage />} />
+        <Route path="/dashboard" element={<UserDashboard />}/>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import './LoginPage.css'
 
-function TextField({id, label, required}){
+function TextField({id, label, required, hint, ...inputProps}){
+    // const messageId = `${id}-msg` testing purposes, will reinstate later
     return (
         <div className="login-field">
             <label htmlFor={id} className="login-field-label">
@@ -11,7 +12,13 @@ function TextField({id, label, required}){
 
             <input
             id={id}
-            className="login-field-input"/>
+            className={"login-field-input"}
+            // aria-describedby={hint ? messageId : undefined} used for testing--we'll deal with that later
+            {...inputProps} // gets the funny hint messages showing in the input boxes
+            />
+            {/* {hint ? (
+                <p id={messageId} className="login-field-hint">{hint}</p>
+            ): null} */} {/** used for testing--we'll also deal with this later*/}
         </div>
     )
 }
@@ -29,7 +36,7 @@ function LoginPage() {
     return (
         <div className="login-page">
             <div className="login-card">
-                <h1 className="login-title">Sign In to Bribequeue</h1>
+                <h1 className="login-title">Sign In to BribeQueue</h1>
 
                 <form className="login-form">
                     <TextField
@@ -37,6 +44,7 @@ function LoginPage() {
                     label="Full name"
                     required
                     type="text"
+                    placeholder="John Doe"
                     value={form.name}
                     />
 
@@ -46,6 +54,7 @@ function LoginPage() {
                     required
                     type="tel"
                     value={form.phone}
+                    placeholder="(903) 420-1987"
                     />
 
                     <button className="login-btn-primary">

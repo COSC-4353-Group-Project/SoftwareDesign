@@ -63,6 +63,16 @@
   font-size: 14px;
 }
 
+.login-field-hint,
+.login-field-error {
+  margin: 0;
+  font-size: 12px;
+}
+
+.login-field-hint {
+  color: var(--color-muted-foreground);
+}
+
 /*  Button and footer  */
 
 .login-btn-primary {

@@ -1,0 +1,7 @@
+.dashboard-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+  background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-background));
+}
