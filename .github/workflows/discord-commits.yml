@@ -20,6 +20,7 @@ jobs:
           ;(async () => {
             for (const commit of event.commits ?? []) {
               if (!commit.distinct) continue // already posted when it was first pushed
+              if (/^Merge (branch|remote-tracking branch) /.test(commit.message)) continue // "merge main into my branch" noise
 
               // First line = summary, everything after = description
               const [summary, ...rest] = commit.message.split('\n')
