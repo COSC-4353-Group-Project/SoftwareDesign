@@ -27,7 +27,29 @@ function UserDashboard(){
             </div>
 
             <p></p>
-            <div>+Live wait times+</div>
+
+            <div className="dashboard-layout-content">
+                <div className="dashboard-main-content">
+                    <div className="dashboard-general-box dashboard-wait-title">
+                        <h2>+Live wait times+</h2>
+                    </div>
+                    <div className="dashboard-general-box dashboard-waittimes">
+                        --Box example--
+                    </div>
+                    {/* <div className="dashboard-general-box dashboard-waitlist">--box--</div> */}
+                </div>
+                <aside className="dashboard-sidebar">
+                    <div className="dashboard-notif-box dashboard-notif-title">
+                        <h2>?Recent Notifications?</h2>
+                    </div>
+                    <p></p>
+                    <div className="dashboard-general-box dashboard-notifs">
+                        --Box example--
+                    </div>
+                </aside>
+            </div>
+
+
         </div>
     )
 }

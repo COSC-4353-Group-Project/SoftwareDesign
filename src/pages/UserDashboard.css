@@ -35,27 +35,73 @@
   color: var(--color-muted-foreground);
 }
 
+.dashboard-wait-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  /* border: 2px solid var(--color-border); */
+}
+
+.dashboard-notif-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 24px;
+  /* border: 2px solid var(--color-border); */
+}
+
 .dashboard-layout {
   display: grid;
   gap: 24px;
-  border: 2px solid var(--color-border) /*used for testing*/
+  border: 2px solid var(--color-border); /*used for testing*/
+}
+
+.dashboard-layout-content {
+  display: grid;
+  gap: 24px;
+  border: 2px solid var(--color-border); /*used for testing*/
 }
 
 @media (min-width: 1024px) { /*1024px original*/ /*@media is used to apply to different styles/devices ex: checks for width and heigh of device*/
   .dashboard-layout {
     grid-template-columns: 530px 360px; /*handles column sizing*/
   }
+  .dashboard-layout-content {
+    grid-template-columns: 530px 360px;;
+  }
 }
 
 .dashboard-main,
-.dashboard-sidebar {
+.dashboard-sidebar { /*the sidebar should be used for recent notifs*/ 
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
+.dashboard-sidebar-content,
+.dashboard-main-content {
+  display: grid;
+  gap: 32px;
+  border: 2px solid var(--color-border);
+}
+
 /*just structure, no width or height for flexibility*/
 .dashboard-general-box { 
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+}
+
+.dashboard-notif-box { 
   display: grid;
   place-items: center;
   border: 2px dashed var(--color-border);
@@ -79,5 +125,8 @@
 
 .dashboard-waitlist {width: 512px; height: 150px}
 .dashboard-reservation {width: 512px; height: 150px}
-/* .dashboard- */
+.dashboard-waittimes {width: 560px; height: 450px;}
+.dashboard-notifs {width: 512px; height: 450px;}
+.dashboard-wait-title {width: 300px; height: 70px;}
+.dashboard-notif-title {width: 300px; height: 70px}
 
