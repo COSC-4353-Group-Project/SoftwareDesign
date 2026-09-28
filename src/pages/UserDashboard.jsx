@@ -7,14 +7,18 @@ function UserDashboard(){
         <div className="dashboard-page">
             <div className="dashboard-header">
                 <div>
-                    <div className="dashboard-box-hello"> {/** greets the user w address */}
+                    <div className="dashboard-box-hello dashboard-hi"> {/** greets the user w address */}
                         <h1>Hi, user!</h1> {/**this'll have to be replaced with the actual person's name */}
+                    </div>
+                    <div className="dashboard-box-hello dashboard-address">
                         <h4>1984 Nowhere Atlantis Suite, Middleof</h4>
-                        </div>
+                    </div>
                 </div>
             </div>
             <div className="dashboard-table-header"> {/** next header for "get a table" section */}
-                <h2>~Get a table~</h2>
+                <div>
+                    <h3>~Get a table~</h3>
+                </div>
             </div>
 
             <div className="dashboard-layout"> {/** these should be just regular boxes for now */}
@@ -25,24 +29,24 @@ function UserDashboard(){
                     --Reserve a future table--
                 </div>
             </div>
-
+        
             <p></p>
 
             <div className="dashboard-layout-content">
-                <div className="dashboard-main-content">
+                <div className="dashboard-main">
                     <div className="dashboard-general-box dashboard-wait-title">
-                        <h2>+Live wait times+</h2>
+                        <h4>+Live wait times+</h4>
                     </div>
                     <div className="dashboard-general-box dashboard-waittimes">
                         --Box example--
                     </div>
-                    {/* <div className="dashboard-general-box dashboard-waitlist">--box--</div> */}
                 </div>
                 <aside className="dashboard-sidebar">
-                    <div className="dashboard-notif-box dashboard-notif-title">
-                        <h2>?Recent Notifications?</h2>
-                    </div>
                     <p></p>
+                    <p></p>
+                    <div className="dashboard-notif-box dashboard-notif-title">
+                        <h4>?Recent Notifications?</h4>
+                    </div>
                     <div className="dashboard-general-box dashboard-notifs">
                         --Box example--
                     </div>
