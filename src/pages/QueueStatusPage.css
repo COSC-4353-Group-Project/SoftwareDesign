@@ -120,6 +120,77 @@
   background: var(--color-primary);
   transition: width 0.7s;
 }
+/*here down is just the stepper progress stuff*/
+/* status stepper: numbered dots joined by lines */
+.stepper {
+  display: flex;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0; /* <ol> comes with default padding for its numbers */
+  list-style: none;
+}
+
+/* each step takes an equal share of the width so the lines stretch */
+.stepper-step {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+
+/* last step has no line after it, so it only takes the space it needs.
+   that lets "Table ready" sit on the right edge instead of leaving a gap */
+.stepper-step:last-child {
+  flex: none;
+}
+
+.stepper-dot {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--color-border);
+  color: var(--color-muted-foreground);
+}
+
+.stepper-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+}
+
+.stepper-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+/* done + current: purple dot, readable label */
+.stepper-step.done .stepper-dot,
+.stepper-step.current .stepper-dot {
+  background: var(--color-primary);
+  color: var(--color-foreground);
+}
+
+.stepper-step.done .stepper-label,
+.stepper-step.current .stepper-label {
+  color: var(--color-foreground);
+}
+
+/* soft purple ring so you can tell which step you're on */
+.stepper-step.current .stepper-dot {
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+}
+
+/* the line after a finished step turns purple */
+.stepper-step.done .stepper-line {
+  background: var(--color-primary);
+}
 
 /* placeholder boxes until i get spacing right.  */
 .queue-box {
@@ -133,7 +204,6 @@
 }
 
 .queue-box-badge    { width: 110px; height: 26px; border-radius: 999px; }
-.queue-box-stepper  { height: 32px; margin-top: 24px; }
 .queue-box-skip     { height: 220px; }
 .queue-box-details  { height: 240px; }
 .queue-box-cancel   { height: 44px; }

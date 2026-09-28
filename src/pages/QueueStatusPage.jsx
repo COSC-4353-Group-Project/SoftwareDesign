@@ -1,4 +1,4 @@
-import { Clock, Users } from 'lucide-react'
+import { Check, Clock, Users } from 'lucide-react'
 import './QueueStatusPage.css'
 
 // Fake data until the backend exists. 
@@ -26,11 +26,48 @@ function formatMinutes(min) {
   return m ? `${h} hr ${m} min` : `${h} hr`
 }
 
+function statusForPosition(position) {
+  if (position <= 0) return 'served'
+  if (position <= ALMOST_READY_AT) return 'almost-ready'
+  return 'waiting'
+}
+
+//  Status stepper
+
+const STEPS = [
+  { key: 'waiting', label: 'Waiting' },
+  { key: 'almost-ready', label: 'Almost ready' },
+  { key: 'served', label: 'Table ready' },
+]
+
+function StatusStepper({ status }) {
+  // Once served, every step (including the last) is complete.
+  const current = status === 'served' ? STEPS.length : STEPS.findIndex((s) => s.key === status)
+
+  return (
+    <ol className="stepper" aria-label="Queue progress">
+      {STEPS.map((step, i) => {
+        const state = i < current ? 'done' : i === current ? 'current' : 'upcoming'
+        return (
+          <li key={step.key} className={`stepper-step ${state}`}>
+            <span className="stepper-dot" aria-current={state === 'current' ? 'step' : undefined}>
+              {state === 'done' ? <Check size={14} aria-hidden /> : i + 1}
+            </span>
+            <span className="stepper-label">{step.label}</span>
+            {i < STEPS.length - 1 && <span className="stepper-line" />}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 //  Position card
 
 function PositionCard({ entry }) {
   const wait = estimateWait(entry.position, entry.minutesPerParty)
-  const almostReady = entry.position <= ALMOST_READY_AT
+  const status = statusForPosition(entry.position)
+  const almostReady = status === 'almost-ready'
   // how far through the line they are, 0-100
   const progress = entry.initialPosition > 0
     ? Math.round(((entry.initialPosition - entry.position) / entry.initialPosition) * 100)
@@ -61,7 +98,7 @@ function PositionCard({ entry }) {
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="queue-box queue-box-stepper">Gonna make this better soon</div>
+      <StatusStepper status={status} />
     </section>
   )
 }
