@@ -23,10 +23,10 @@ function UserDashboard(){
 
             <div className="dashboard-layout"> {/** these should be just regular boxes for now */}
                 <div className="dashboard-general-box dashboard-waitlist">
-                    --Join waitlist--
+                    <h3>--Join waitlist--</h3>
                 </div>
                 <div className="dashboard-general-box dashboard-reservation">
-                    --Reserve a future table--
+                    <h3>--Reserve a future table--</h3>
                 </div>
             </div>
         
@@ -34,11 +34,10 @@ function UserDashboard(){
 
             <div className="dashboard-layout-content">
                 <div className="dashboard-main">
-                    <div className="dashboard-general-box dashboard-wait-title">
+                    <div className="dashboard-wait-box dashboard-wait-title">
                         <h4>+Live wait times+</h4>
                     </div>
                     <div className="dashboard-general-box dashboard-waittimes">
-                        --Box example--
                     </div>
                 </div>
                 <aside className="dashboard-sidebar">
@@ -48,7 +47,6 @@ function UserDashboard(){
                         <h4>?Recent Notifications?</h4>
                     </div>
                     <div className="dashboard-general-box dashboard-notifs">
-                        --Box example--
                     </div>
                 </aside>
             </div>
