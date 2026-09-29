@@ -2,7 +2,7 @@
   min-height: 100dvh;
 }
 
-/* stays pinned to the top while the page scrolls */
+/* stay at top, sticky does that */
 .top-bar {
   position: sticky;
   top: 0;
@@ -35,32 +35,112 @@
   margin-left: auto;
 }
 
-/* hide the nav links and user name on phones */
-@media (max-width: 639px) {
-  .top-bar-nav,
-  .bar-box-user {
-    display: none;
-  }
+/* app name + icon on the left, links back to the dashboard same as the myqueue and history */
+.top-bar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-foreground);
+  font-weight: 600;
+  text-decoration: none;
 }
 
-/* placeholder boxes (temporary, delete once real content goes in) */
-.bar-box {
+.top-bar-logo-icon {
   display: grid;
   place-items: center;
-  height: 32px;
-  border: 2px dashed var(--color-border);
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
-  color: var(--color-muted-foreground);
-  font-size: 12px;
+  background: var(--color-primary);
 }
 
-.bar-box-logo { width: 130px; }
-.bar-box-link { width: 90px; }
-.bar-box-user { width: 110px; }
-.bar-box-icon { width: 32px; }
+/* nav links: darker when not hovered, lighter when hovererd. */
+.nav-link {
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+/*hoverness*/
+.nav-link:hover { 
+  color: var(--color-foreground);
+}
 
-.bar-box-queue {
+/* the page you're on (NavLink adds .active) */
+.nav-link.active {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+/* My Queue is orange whether or not it's the current page since moneytime */
+/* slightly faded */
+.nav-link-queue {
   color: var(--color-orange);
-  border-color: var(--color-orange-border);
+  opacity: 0.7;
+}
+
+/* brightens to full orange on hover, same as grey */
+.nav-link-queue:hover,
+.nav-link-queue.active {
+  color: var(--color-orange);
+  opacity: 1;
+}
+
+.nav-link-queue.active {
   background: var(--color-orange-soft);
+}
+
+/* round-ish square buttons that only hold an icon */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--color-border);
+  color: var(--color-foreground);
+}
+
+.top-bar-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+}
+
+/* first letter of the name in a purple circle. had to find a way to make it work for everyone*/
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.top-bar-user-name {
+  max-width: 128px;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis; /* long names end in ... instead of pushing things over, cause ew.  */
+  white-space: nowrap;
+}
+
+/* hide the nav links and user name on phones. unsure if this works because the code is stolen XD */
+@media (max-width: 639px) {
+  .top-bar-nav,
+  .top-bar-user {
+    display: none;
+  }
 }

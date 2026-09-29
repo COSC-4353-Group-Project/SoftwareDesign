@@ -1,0 +1,12 @@
+// Cloudflare hosting config. The site is static (no backend), so this just uploads the build.
+{
+  // must match the project name in the Cloudflare dashboard
+  "name": "softwaredesign",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    // what `npm run build` produces
+    "directory": "./dist",
+    // unknown paths like /status get index.html, so React Router can handle them
+    "not_found_handling": "single-page-application"
+  }
+}

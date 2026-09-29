@@ -12,6 +12,7 @@
   --color-primary-text: #b89be0;     /* purple text/links (shall see if its readable) */
 
   --color-danger: #f87171;           /* error messages important */
+  --color-success: #4ade80;          /* "table ready" / good news */
 
   --color-orange: #ffbb55;           /* orange text/icons */
   --color-orange-soft: #2a1f14;      /* orange tinted backgrounds */
