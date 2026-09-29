@@ -19,7 +19,10 @@ function App() {
       {/* with top bar: every page nested in here gets AppLayout around it */}
       <Route element={<AppLayout />}>
         <Route path="/status" element={<QueueStatusPage />} />
-        <Route path="/dashboard" element={<UserDashboard />}/>
+      </Route>
+
+      <Route element={<AppLayout />}>
+        <Route path="/dashboard" element={<UserDashboard />} />
       </Route>
 
       <Route element={<AppLayout />}>
