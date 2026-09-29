@@ -1,4 +1,6 @@
-import { Check, Clock, Users } from 'lucide-react'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Check, ChevronDown, Clock, Crown, Users, Zap } from 'lucide-react'
 import './QueueStatusPage.css'
 
 // Fake data until the backend exists. 
@@ -8,6 +10,13 @@ const MOCK_ENTRY = {
   position: 3,
   initialPosition: 8,
   minutesPerParty: 6,
+  type: 'walk-in', // or 'reservation'
+  joinedAt: '2026-09-28T18:05:00',
+  notes: 'High chair please',
+  // paid skips; empty = the orange box stays hidden
+  skips: [
+    // { label: 'Skip 2 spots', from: 5, to: 3, price: 6, at: '2026-09-28T18:12:00' },
+  ],
 }
 
 const ALMOST_READY_AT = 3 // positions 1-3 count as "almost ready"
@@ -62,6 +71,19 @@ function StatusStepper({ status }) {
   )
 }
 
+//  Status badge (top right of the header)
+
+const STATUS_LABELS = {
+  waiting: 'Waiting',
+  'almost-ready': 'Almost ready',
+  served: 'Table ready',
+}
+
+function StatusBadge({ status }) {
+  // the status doubles as a CSS class, so each one can have its own color
+  return <span className={`status-badge ${status}`}>{STATUS_LABELS[status]}</span>
+}
+
 //  Position card
 
 function PositionCard({ entry }) {
@@ -103,10 +125,222 @@ function PositionCard({ entry }) {
   )
 }
 
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+function formatPrice(n) {
+  return `$${n.toFixed(0)}`
+}
+
+//  Details card
+
+function Details({ entry }) {
+  const isReservation = entry.type === 'reservation'
+  const totalPaid = entry.skips.reduce((sum, s) => sum + s.price, 0)
+
+  return (
+    <section className="details-card">
+      <h2 className="details-title">Details</h2>
+
+      <dl className="details-list">
+        <div className="details-row"><dt>Service</dt><dd>{entry.serviceName}</dd></div>
+        <div className="details-row"><dt>Party size</dt><dd>{entry.partySize}</dd></div>
+        <div className="details-row"><dt>Type</dt><dd>{isReservation ? 'Reservation' : 'Walk-in'}</dd></div>
+        <div className="details-row"><dt>{isReservation ? 'Booked' : 'Joined'}</dt><dd>{formatTime(entry.joinedAt)}</dd></div>
+        {entry.notes && <div className="details-row"><dt>Notes</dt><dd>{entry.notes}</dd></div>}
+      </dl>
+
+      {entry.skips.length > 0 && (
+        <div className="details-skips">
+          <p className="details-skips-title"><Zap size={14} aria-hidden /> Skips purchased · {formatPrice(totalPaid)} total</p>
+          <ul>
+            {entry.skips.map((s) => (
+              <li key={s.at}>
+                <span>{s.label} (#{s.from} → #{s.to})</span>
+                <strong>{formatPrice(s.price)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
+}
+
+//  Skip panel (pay to move up)
+
+const PRICE_PER_SPOT = 3
+const FRONT_OF_LINE_PRICE = 20
+
+// "#5 → #3 · 30 min 18 min" line under each option
+function WaitChange({ from, to, minutesPerParty }) {
+  return (
+    <span className="skip-wait">
+      #{from} → <strong>#{to}</strong> · <s>{formatMinutes(estimateWait(from, minutesPerParty))}</s>{' '}
+      <strong>{formatMinutes(estimateWait(to, minutesPerParty))}</strong>
+    </span>
+  )
+}
+
+function SkipPanel({ position, minutesPerParty, onPurchase }) {
+  const [open, setOpen] = useState(false)
+  const [choice, setChoice] = useState('') // '', 'spots', or 'front'
+  const [spots, setSpots] = useState(1)
+
+  // already at the front, nothing to skip
+  if (position <= 1) {
+    return null
+  }
+
+  // Most spots you can buy one at a time: you can't land on #1 (that's "front of line"),
+  // and it should never cost as much as front of line (7 spots x $3 = $21 > $20).
+  const maxSpots = Math.min(position - 2, Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1)
+  // the line keeps moving, so a number picked earlier might be too big now
+  const spotCount = Math.min(spots, maxSpots)
+
+  // what the pay button would buy right now
+  let skip = null
+  if (choice === 'spots' && maxSpots > 0) {
+    skip = {
+      label: `Skip ${spotCount} spot${spotCount === 1 ? '' : 's'}`,
+      from: position,
+      to: position - spotCount,
+      price: spotCount * PRICE_PER_SPOT,
+    }
+  } else if (choice === 'front') {
+    skip = { label: 'Front of line', from: position, to: 1, price: FRONT_OF_LINE_PRICE }
+  }
+
+  function handlePurchase() {
+    onPurchase(skip)
+    setChoice('')
+    setOpen(false)
+  }
+
+  return (
+    <section className="skip-panel">
+      {/* header doubles as the open/close button */}
+      <button type="button" className="skip-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span className="skip-icon"><Zap size={16} aria-hidden /></span>
+        <span className="skip-heading">
+          <span className="skip-title">Move up in line</span>
+          <span className="skip-subtitle">
+            {maxSpots > 0 ? `${formatPrice(PRICE_PER_SPOT)} per spot · ` : ''}
+            {formatPrice(FRONT_OF_LINE_PRICE)} for front of line
+          </span>
+        </span>
+        <ChevronDown size={20} className={open ? 'skip-chevron open' : 'skip-chevron'} aria-hidden />
+      </button>
+
+      {open && (
+        <div className="skip-body">
+          <fieldset className="skip-options">
+            <legend className="visually-hidden">Skip options</legend>
+
+            {maxSpots > 0 && (
+              <label className={choice === 'spots' ? 'skip-option selected' : 'skip-option'}>
+                <input
+                  type="radio"
+                  name="skip"
+                  value="spots"
+                  checked={choice === 'spots'}
+                  onChange={() => setChoice('spots')}
+                />
+                <span className="skip-option-text">
+                  <span className="skip-option-title">Choose how many spots</span>
+                  <WaitChange from={position} to={position - spotCount} minutesPerParty={minutesPerParty} />
+                  <span className="skip-slider-row">
+                    <input
+                      type="range"
+                      min={1}
+                      max={maxSpots}
+                      value={spotCount}
+                      disabled={maxSpots === 1}
+                      onChange={(e) => {
+                        setSpots(Number(e.target.value))
+                        setChoice('spots') // moving the slider selects this option
+                      }}
+                      aria-label="Spots to skip"
+                    />
+                    <span className="skip-slider-count">{spotCount} spot{spotCount === 1 ? '' : 's'}</span>
+                  </span>
+                </span>
+                <span className="skip-price">{formatPrice(spotCount * PRICE_PER_SPOT)}</span>
+              </label>
+            )}
+
+            <label className={choice === 'front' ? 'skip-option selected' : 'skip-option'}>
+              <input
+                type="radio"
+                name="skip"
+                value="front"
+                checked={choice === 'front'}
+                onChange={() => setChoice('front')}
+              />
+              <span className="skip-option-text">
+                <span className="skip-option-title"><Crown size={14} aria-hidden /> Front of line</span>
+                <WaitChange from={position} to={1} minutesPerParty={minutesPerParty} />
+              </span>
+              <span className="skip-price">{formatPrice(FRONT_OF_LINE_PRICE)}</span>
+            </label>
+          </fieldset>
+
+          <button type="button" className="skip-pay" disabled={!skip} onClick={handlePurchase}>
+            {skip ? `Pay ${formatPrice(skip.price)} & move to #${skip.to}` : 'Choose an option'}
+          </button>
+          <p className="skip-note">Demo only: no real payment is taken.</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+//  Leave queue button (asks before doing anything)
+
+function CancelButton({ label, onConfirm }) {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  if (!confirming) {
+    return <button type="button" className="cancel-btn" onClick={() => setConfirming(true)}>{label}</button>
+  }
+
+  return (
+    <div className="cancel-confirm" role="alertdialog" aria-label={`${label}?`}>
+      <p>Are you sure? You'll lose your spot and any skips you paid for.</p>
+      <div className="cancel-actions">
+        <button
+          type="button"
+          className="cancel-yes"
+          disabled={busy}
+          onClick={async () => { setBusy(true); await onConfirm() }}
+        >
+          Yes, {label.toLowerCase()}
+        </button>
+        <button type="button" className="cancel-no" onClick={() => setConfirming(false)}>Keep my spot</button>
+      </div>
+    </div>
+  )
+}
+
 //  Page
 
 export default function QueueStatusPage() {
-  const entry = MOCK_ENTRY
+  // state (not a plain const) so buying a skip can change the position on screen
+  const [entry, setEntry] = useState(MOCK_ENTRY)
+  const navigate = useNavigate()
+
+  // no backend yet, so just update the local copy: new position + add to the skips list
+  function handleSkip(skip) {
+    const purchase = { ...skip, at: new Date().toISOString() }
+    setEntry({ ...entry, position: skip.to, skips: [...entry.skips, purchase] })
+  }
+
+  // no backend yet, so "leaving" just sends them to the dashboard
+  async function handleLeave() {
+    navigate('/dashboard')
+  }
 
   return (
     <div className="queue-page">
@@ -116,21 +350,25 @@ export default function QueueStatusPage() {
           <h1 className="queue-title">Queue status</h1>
           <p className="queue-subtitle">{entry.serviceName}</p>
         </div>
-        <div className="queue-box queue-box-badge">Badge</div>
+        <StatusBadge status={statusForPosition(entry.position)} />
       </div>
 
       <div className="queue-layout">
         {/* main column */}
         <div className="queue-main">
           <PositionCard entry={entry} />
-          <div className="queue-box queue-box-skip">Skip / move up panel</div>
+          <SkipPanel
+            position={entry.position}
+            minutesPerParty={entry.minutesPerParty}
+            onPurchase={handleSkip}
+          />
         </div>
 
         {/* sidebar, should expand with more info if needed (downwards) */}
         <aside className="queue-sidebar">
-          <div className="queue-box queue-box-details">Details</div>
-          <div className="queue-box queue-box-cancel">Leave queue</div>
-          <div className="queue-box queue-box-link">Back link</div>
+          <Details entry={entry} />
+          <CancelButton label="Leave queue" onConfirm={handleLeave} />
+          <p className="back-link"><Link to="/dashboard">Back to dashboard</Link></p>
         </aside>
       </div>
     </div>
