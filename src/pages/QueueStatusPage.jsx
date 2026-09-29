@@ -168,7 +168,7 @@ function Details({ entry }) {
   )
 }
 
-//  Skip panel (pay to move up, bribetime)
+//  Skip panel (pay to move up, bribetime, change these for values. )
 
 const PRICE_PER_SPOT = 3
 const FRONT_OF_LINE_PRICE = 20
@@ -194,7 +194,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
   }
 
   // Most spots you can buy one at a time: you can't land on #1 (that's "front of line" so give us 20$),
-  // and it should never cost as much as front of line (7 spots x $3 = $21 > $20).
+  //
   const maxSpots = Math.min(position - 2, Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1)
   // the line keeps moving so a number picked earlier might be too big now
   const spotCount = Math.min(spots, maxSpots)
