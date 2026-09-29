@@ -80,7 +80,7 @@ const STATUS_LABELS = {
 }
 
 function StatusBadge({ status }) {
-  // the status doubles as a CSS class, so each one can have its own color
+  // the status = css class
   return <span className={`status-badge ${status}`}>{STATUS_LABELS[status]}</span>
 }
 
@@ -168,12 +168,12 @@ function Details({ entry }) {
   )
 }
 
-//  Skip panel (pay to move up)
+//  Skip panel (pay to move up, bribetime)
 
 const PRICE_PER_SPOT = 3
 const FRONT_OF_LINE_PRICE = 20
 
-// "#5 → #3 · 30 min 18 min" line under each option
+// "#5 goes into #3 · 30 min 18 min" line under each option
 function WaitChange({ from, to, minutesPerParty }) {
   return (
     <span className="skip-wait">
@@ -193,10 +193,10 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
     return null
   }
 
-  // Most spots you can buy one at a time: you can't land on #1 (that's "front of line"),
+  // Most spots you can buy one at a time: you can't land on #1 (that's "front of line" so give us 20$),
   // and it should never cost as much as front of line (7 spots x $3 = $21 > $20).
   const maxSpots = Math.min(position - 2, Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1)
-  // the line keeps moving, so a number picked earlier might be too big now
+  // the line keeps moving so a number picked earlier might be too big now
   const spotCount = Math.min(spots, maxSpots)
 
   // what the pay button would buy right now
@@ -220,7 +220,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
 
   return (
     <section className="skip-panel">
-      {/* header doubles as the open/close button */}
+      {/* header doubles as the open/close button for the neatness */}
       <button type="button" className="skip-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span className="skip-icon"><Zap size={16} aria-hidden /></span>
         <span className="skip-heading">
@@ -327,17 +327,17 @@ function CancelButton({ label, onConfirm }) {
 //  Page
 
 export default function QueueStatusPage() {
-  // state (not a plain const) so buying a skip can change the position on screen
+  // state instead of const so buying a skip can change the position on screen
   const [entry, setEntry] = useState(MOCK_ENTRY)
   const navigate = useNavigate()
 
-  // no backend yet, so just update the local copy: new position + add to the skips list
+  // no backend yet, so just update the local copy new position add to the skips list
   function handleSkip(skip) {
     const purchase = { ...skip, at: new Date().toISOString() }
     setEntry({ ...entry, position: skip.to, skips: [...entry.skips, purchase] })
   }
 
-  // no backend yet, so "leaving" just sends them to the dashboard
+  // no backend yet, so "leaving" just sends them to the dashboard YET, waiting on this 
   async function handleLeave() {
     navigate('/dashboard')
   }
