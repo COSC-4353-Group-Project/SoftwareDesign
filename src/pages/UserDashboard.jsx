@@ -1,4 +1,5 @@
 import './UserDashboard.css'
+import { Clock, Users } from 'lucide-react' // icons for the live wait time cards
 
 // layout shenanigans
 
@@ -37,7 +38,45 @@ function UserDashboard(){
                     <div className="dashboard-wait-box dashboard-wait-title">
                         <h4>+Live wait times+</h4>
                     </div>
-                    <div className="dashboard-general-box dashboard-waittimes">
+                    <div className="dashboard-general-box dashboard-waittimes"> 
+                        {/** grid of wait time cards**/}
+                        <div className="wait-grid">
+                            <div className="wait-card">
+                                <div className="wait-card-top">
+                                    <p className="wait-card-name">Dine-in · Party of 1–2</p>
+                                    <span className="wait-badge-open">Open</span>
+                                </div>
+                                <p className="wait-card-desc">Standard table seating for small parties.</p>
+                                <div className="wait-card-stats">
+                                    <span className="wait-stat"><Users size={13} /> 9 in line</span>
+                                    <span className="wait-stat"><Clock size={13} /> ~1 hr</span>
+                                </div>
+                            </div>
+
+                            <div className="wait-card">
+                                <div className="wait-card-top">
+                                    <p className="wait-card-name">Dine-in · Party of 3–6</p>
+                                    <span className="wait-badge-open">Open</span>
+                                </div>
+                                <p className="wait-card-desc">Larger tables and booths. Longer turnover.</p>
+                                <div className="wait-card-stats">
+                                    <span className="wait-stat"><Users size={13} /> 14 in line</span>
+                                    <span className="wait-stat"><Clock size={13} /> ~2 hr 15 min</span>
+                                </div>
+                            </div>
+
+                            <div className="wait-card">
+                                <div className="wait-card-top">
+                                    <p className="wait-card-name">Bar Seating</p>
+                                    <span className="wait-badge-open">Open</span>
+                                </div>
+                                <p className="wait-card-desc">First-come bar stools. Full menu available.</p>
+                                <div className="wait-card-stats">
+                                    <span className="wait-stat"><Users size={13} /> 5 in line</span>
+                                    <span className="wait-stat"><Clock size={13} /> ~24 min</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <aside className="dashboard-sidebar">
