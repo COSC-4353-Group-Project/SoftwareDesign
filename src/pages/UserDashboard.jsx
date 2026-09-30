@@ -36,7 +36,7 @@ function UserDashboard(){
             <div className="dashboard-layout-content">
                 <div className="dashboard-main">
                     <div className="dashboard-wait-box dashboard-wait-title">
-                        <h4>+Live wait times+</h4>
+                        <h4>Live wait times</h4>
                     </div>
                     <div className="dashboard-general-box dashboard-waittimes"> 
                         {/** grid of wait time cards**/}
@@ -46,10 +46,10 @@ function UserDashboard(){
                                     <p className="wait-card-name">Dine-in · Party of 1–2</p>
                                     <span className="wait-badge-open">Open</span>
                                 </div>
-                                <p className="wait-card-desc">Standard table seating for small parties.</p>
+                                <p className="wait-card-desc">Standard table seating for dates.</p>
                                 <div className="wait-card-stats">
-                                    <span className="wait-stat"><Users size={13} /> 9 in line</span>
-                                    <span className="wait-stat"><Clock size={13} /> ~1 hr</span>
+                                    <span className="wait-stat"><Users size={14} /> 9 in line</span>
+                                    <span className="wait-stat"><Clock size={14} /> ~1 hr</span>
                                 </div>
                             </div>
 
@@ -58,10 +58,10 @@ function UserDashboard(){
                                     <p className="wait-card-name">Dine-in · Party of 3–6</p>
                                     <span className="wait-badge-open">Open</span>
                                 </div>
-                                <p className="wait-card-desc">Larger tables and booths. Longer turnover.</p>
+                                <p className="wait-card-desc">Larger tables and booths. Longer Wait-Time.</p>
                                 <div className="wait-card-stats">
-                                    <span className="wait-stat"><Users size={13} /> 14 in line</span>
-                                    <span className="wait-stat"><Clock size={13} /> ~2 hr 15 min</span>
+                                    <span className="wait-stat"><Users size={14} /> 14 in line</span>
+                                    <span className="wait-stat"><Clock size={14} /> ~2 hr 15 min</span>
                                 </div>
                             </div>
 
@@ -70,10 +70,10 @@ function UserDashboard(){
                                     <p className="wait-card-name">Bar Seating</p>
                                     <span className="wait-badge-open">Open</span>
                                 </div>
-                                <p className="wait-card-desc">First-come bar stools. Full menu available.</p>
+                                <p className="wait-card-desc">First-come bar stools. Bartender Service</p>
                                 <div className="wait-card-stats">
-                                    <span className="wait-stat"><Users size={13} /> 5 in line</span>
-                                    <span className="wait-stat"><Clock size={13} /> ~24 min</span>
+                                    <span className="wait-stat"><Users size={14} /> 5 in line</span>
+                                    <span className="wait-stat"><Clock size={14} /> ~24 min</span>
                                 </div>
                             </div>
                         </div>
@@ -83,7 +83,7 @@ function UserDashboard(){
                     <p></p>
                     <p></p>
                     <div className="dashboard-notif-box dashboard-notif-title">
-                        <h4>?Recent Notifications?</h4>
+                        <h4>Recent notifications</h4>
                     </div>
                     <div className="dashboard-general-box dashboard-notifs">
                     </div>
