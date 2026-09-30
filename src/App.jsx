@@ -4,7 +4,8 @@ import RegistrationPage from './pages/RegistrationPage.jsx'
 import QueueStatusPage from './pages/QueueStatusPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import UserDashboard from './pages/UserDashboard.jsx'
-import HistoryPage from './pages/HistoryPage.jsx'
+import HistoryPage from './pages/HistoryPage.jsx'   
+import AdminDashboard from './pages/AdminDashboard.jsx'
 
 // One line per page. Teammates add their route here.
 function App() {
@@ -27,6 +28,10 @@ function App() {
 
       <Route element={<AppLayout />}>
         <Route path="/history" element={<HistoryPage />} />
+      </Route>
+
+      <Route element={<AppLayout />}>
+        <Route path="/admin-board" element={<AdminDashboard />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
