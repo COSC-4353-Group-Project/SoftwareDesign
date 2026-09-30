@@ -9,7 +9,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -18,42 +18,61 @@
 .history-layout {
   display: grid;
   gap: 24px;
+  justify-content: center;
 }
 
 @media (min-width: 1024px) {
   .history-layout {
     display: flex;
     grid-template-columns: 1fr 360px;
-
+    justify-content: center;
   }
 }
 
-.history-main,
+.history-main 
 
-/* placeholder boxes until i get spacing right.  */
+/* Colors can change, border colors are only temporary */
 .history-box {
   display: grid;
-  place-items: center;
-  border: 2px dashed var(--color-border);
+  grid-template-columns: 150px 220px 200px 150px;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+
+  border: 2px solid var(--color-muted-foreground);
   border-radius: 12px;
   background: var(--color-surface);
-  color: var(--color-muted-foreground);
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: 10px;
 
   width: 100%;
   max-width: 800px;
-  min-height: 180px;
-  margin-inline: auto;
+  margin-bottom: 5px;
 }
 
 /* Labels to indicate "Service", "Date", "Bribe Amount", "Queue Status" */
 .history-box-labels {
-    display: grid;
-    justify-content: space-between;
-    grid-template-columns: 150px 150px 200px 100px;
-    align-items: center;
-    gap: 16px;
-    padding: 0 16px;
-    margin-bottom: -2;
-    font-size: 14px;
+  display: grid;
+  justify-content: space-between;
+  grid-template-columns: 150px 150px 200px 180px;
+  align-items: center;  
+  gap: 16px;
+  padding: 16px;
+  font-size: 14px;
+  margin-bottom: 5px;
+
+  border: 2px solid var(--color-orange);
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
+  box-sizing: border-box;
+
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20px;
+
+  /* Make text pop out more like queue page's "Almost ready" */
+  color: var(--color-primary-text);
+  font-weight: 600;
 }
