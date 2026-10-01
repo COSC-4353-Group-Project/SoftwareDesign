@@ -24,10 +24,7 @@ function UserDashboard(){
 
             <div className="dashboard-layout"> {/** these should be just regular boxes for now */}
                 <div className="dashboard-general-box dashboard-waitlist">
-                    <h3>--Join waitlist--</h3>
-                </div>
-                <div className="dashboard-general-box dashboard-reservation">
-                    <h3>--Reserve a future table--</h3>
+                    <h3>Join Waitlist</h3>
                 </div>
             </div>
         

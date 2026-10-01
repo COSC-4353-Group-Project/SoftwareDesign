@@ -35,6 +35,10 @@
 .dashboard-layout {
   display: grid;
   gap: 24px;
+  /* Thu: justify middle Join button */
+  grid-template-columns: 1fr;
+  width: 300px;
+  margin-left: 380px;
   /* border: 2px solid var(--color-border); used for testing */
 }
 
@@ -45,9 +49,11 @@
 }
 
 @media (min-width: 1024px) { /*1024px original*/ /*@media is used to apply to different styles/devices ex: checks for width and heigh of device*/
+  /* 
+  Thu: justify middle Join button
   .dashboard-layout {
-    grid-template-columns: 530px 360px; /*handles column sizing weirdly enough*/
-  }
+    grid-template-columns: 530px 360px; handles column sizing weirdly enough
+  } */
   .dashboard-layout-content {
     grid-template-columns: 560px 430px; /* was 500px 490px, sized so the wait times and notifications keep a 48px gap (same total) */
   }
