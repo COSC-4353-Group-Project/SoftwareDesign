@@ -58,8 +58,6 @@ function TextField({ id, label, required, error, ...inputProps }) {
       <input
         id={id}
         className={error ? 'field-input invalid' : 'field-input'}
-        aria-invalid={!!error}
-        aria-describedby={error ? messageId : undefined}
         {...inputProps}
       />
       {error ? (

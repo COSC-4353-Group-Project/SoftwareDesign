@@ -1,0 +1,39 @@
+/* the grey pill that holds both options */
+.role-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--color-border);
+}
+
+/* each half: icon + word, muted until hovered */
+.role-switch-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.role-switch-option:hover {
+  color: var(--color-foreground);
+}
+
+/* the side you're on looks "pressed in" with the surface color, like the test project */
+.role-switch-option.active {
+  background: var(--color-surface);
+  color: var(--color-foreground);
+}
+
+/* phones: icons only so the bar doesn't overflow */
+@media (max-width: 639px) {
+  .role-switch-label {
+    display: none;
+  }
+}

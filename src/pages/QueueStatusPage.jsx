@@ -54,13 +54,13 @@ function StatusStepper({ status }) {
   const current = status === 'served' ? STEPS.length : STEPS.findIndex((s) => s.key === status)
 
   return (
-    <ol className="stepper" aria-label="Queue progress">
+    <ol className="stepper">
       {STEPS.map((step, i) => {
         const state = i < current ? 'done' : i === current ? 'current' : 'upcoming'
         return (
           <li key={step.key} className={`stepper-step ${state}`}>
-            <span className="stepper-dot" aria-current={state === 'current' ? 'step' : undefined}>
-              {state === 'done' ? <Check size={14} aria-hidden /> : i + 1}
+            <span className="stepper-dot">
+              {state === 'done' ? <Check size={14} /> : i + 1}
             </span>
             <span className="stepper-label">{step.label}</span>
             {i < STEPS.length - 1 && <span className="stepper-line" />}
@@ -98,11 +98,11 @@ function PositionCard({ entry }) {
   return (
     <section className={almostReady ? 'position-card almost-ready' : 'position-card'}>
       <p className="position-label">Your position</p>
-      <p className="position-number" aria-live="polite">#{entry.position}</p>
+      <p className="position-number">#{entry.position}</p>
 
       <div className="position-meta">
-        <span><Clock size={16} aria-hidden /> ~{formatMinutes(wait)}</span>
-        <span><Users size={16} aria-hidden /> Party of {entry.partySize}</span>
+        <span><Clock size={16} /> ~{formatMinutes(wait)}</span>
+        <span><Users size={16} /> Party of {entry.partySize}</span>
       </div>
 
       {almostReady && (
@@ -112,10 +112,6 @@ function PositionCard({ entry }) {
       <div
         className="progress-track"
         role="progressbar"
-        aria-valuenow={progress}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="Progress through queue"
       >
         <div className="progress-fill" style={{ width: `${progress}%` }} />
       </div>
@@ -153,7 +149,7 @@ function Details({ entry }) {
 
       {entry.skips.length > 0 && (
         <div className="details-skips">
-          <p className="details-skips-title"><Zap size={14} aria-hidden /> Skips purchased · {formatPrice(totalPaid)} total</p>
+          <p className="details-skips-title"><Zap size={14} /> Skips purchased · {formatPrice(totalPaid)} total</p>
           <ul>
             {entry.skips.map((s) => (
               <li key={s.at}>
@@ -221,8 +217,8 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
   return (
     <section className="skip-panel">
       {/* header doubles as the open/close button for the neatness */}
-      <button type="button" className="skip-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="skip-icon"><Zap size={16} aria-hidden /></span>
+      <button type="button" className="skip-toggle" onClick={() => setOpen(!open)}>
+        <span className="skip-icon"><Zap size={16} /></span>
         <span className="skip-heading">
           <span className="skip-title">Move up in line</span>
           <span className="skip-subtitle">
@@ -230,7 +226,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
             {formatPrice(FRONT_OF_LINE_PRICE)} for front of line
           </span>
         </span>
-        <ChevronDown size={20} className={open ? 'skip-chevron open' : 'skip-chevron'} aria-hidden />
+        <ChevronDown size={20} className={open ? 'skip-chevron open' : 'skip-chevron'} />
       </button>
 
       {open && (
@@ -261,7 +257,6 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
                         setSpots(Number(e.target.value))
                         setChoice('spots') // moving the slider selects this option
                       }}
-                      aria-label="Spots to skip"
                     />
                     <span className="skip-slider-count">{spotCount} spot{spotCount === 1 ? '' : 's'}</span>
                   </span>
@@ -279,7 +274,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
                 onChange={() => setChoice('front')}
               />
               <span className="skip-option-text">
-                <span className="skip-option-title"><Crown size={14} aria-hidden /> Front of line</span>
+                <span className="skip-option-title"><Crown size={14} /> Front of line</span>
                 <WaitChange from={position} to={1} minutesPerParty={minutesPerParty} />
               </span>
               <span className="skip-price">{formatPrice(FRONT_OF_LINE_PRICE)}</span>
@@ -307,7 +302,7 @@ function CancelButton({ label, onConfirm }) {
   }
 
   return (
-    <div className="cancel-confirm" role="alertdialog" aria-label={`${label}?`}>
+    <div className="cancel-confirm" role="alertdialog">
       <p>Are you sure? You'll lose your spot and any skips you paid for.</p>
       <div className="cancel-actions">
         <button
