@@ -31,7 +31,7 @@ function AdminDashboard(){
                 </div>
             </div>
             <div>
-                <h1>Services</h1>
+                <h1 className="admin-service-header">Services</h1>
                 <div className="admin-service-container">
                     Service ex c:
                 </div>
