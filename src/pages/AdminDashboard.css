@@ -1,8 +1,69 @@
 /* test code to make sure everything works */
 .admin-page {
-  min-height: 100dvh;
-  display: grid;
-  place-items: center;
-  padding: 40px 16px;
-  background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-background)); /*came from index.css*/
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 16px;
+}
+
+.admin-header {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    /* border: 2px solid var(--color-border); used for testing */
+}
+
+.admin-layout {
+    display: grid;
+    gap: 24px;
+}
+
+.admin-new-service { /*New service button*/
+    display: grid;
+    justify-items: end;
+    font-size: x-large;
+    border: 2px solid var(--color-border);
+    border-radius: 32px;
+    margin-bottom: 32px;
+    /* margin-left: 256px; */
+}
+
+.admin-general-box {
+    display: grid;
+}
+
+.admin-stats-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border: 2px solid var(--color-border);
+    align-items: flex-start;
+}
+
+.admin-stats-box {
+    border: 2px solid var(--color-border);
+    margin-top: 16px;
+    margin-left: 16px;
+    margin-right: 8px;
+    margin-bottom: 16px;
+    width: 220px;
+    height: 150px;
+}
+
+.admin-service-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border: none;
+    align-items: flex-start;
+    border: 2px solid var(--color-border);
+    height: 150px;
+    margin-bottom: 16px;
+}
+
+@media (min-width: 1024px) {
+    .admin-layout {
+        grid-template-columns: auto;
+    }
 }
