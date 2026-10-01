@@ -1,0 +1,55 @@
+/* page wrapper, keeps the content from stretching too wide on big screens */
+.services-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.services-header {
+  margin-bottom: 24px;
+}
+
+/* one column on phones (form on top, list below), list + 400px form side by side on wide screens */
+.services-layout {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .services-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* takes up whatever width is left over next to the form */
+.services-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* one service card, min-height is only so the empty boxes are visible */
+.service-box {
+  min-height: 110px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+/* form card, fixed width on wide screens */
+.services-form-box {
+  min-height: 420px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+@media (min-width: 1024px) {
+  .services-form-box {
+    width: 400px;
+    flex-shrink: 0;
+  }
+}
