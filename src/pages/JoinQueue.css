@@ -1,0 +1,257 @@
+.join-queue-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* title and back to dash */
+.join-queue-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.join-queue-back {
+  color: var(--color-primary-text);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.join-queue-back:hover {
+  text-decoration: underline;
+}
+
+/* title and sub */
+.join-queue-header h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.join-queue-header p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground);
+}
+
+.join-queue-layout {
+  display: grid;
+  gap: 24px;
+}
+
+/* stacks cards and shrink with padding */
+.join-queue-main,
+.join-queue-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.join-queue-card {
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.join-queue-card h2,
+.join-queue-preferences legend {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* under heading */
+.join-queue-description {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+/* button styling */
+.join-queue-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.join-queue-step-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+  font: inherit;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.join-queue-step-button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.join-queue-step-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* guest count */
+.join-queue-party {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  gap: 4px;
+}
+
+.join-queue-party strong {
+  font-size: 36px;
+  line-height: 1;
+  color: var(--color-primary-text);
+}
+
+.join-queue-party span {
+  font-size: 13px;
+  color: var(--color-muted-foreground);
+}
+
+.join-queue-preferences {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+/* seating options */
+.join-queue-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.join-queue-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.join-queue-option input {
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+.join-queue-option.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+
+/* summary card with Open/Closed button, might remove cause its use in a queue doesn't make that much sense */
+.join-queue-summary-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.join-queue-open {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--color-success);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.join-queue-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0 0;
+  font-size: 14px;
+}
+
+.join-queue-stats div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.join-queue-stats dt {
+  color: var(--color-muted-foreground);
+}
+
+.join-queue-stats dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* No charge notice at bottom */
+.join-queue-note {
+  padding: 16px;
+  border: 1px solid var(--color-orange-border);
+  border-radius: 12px;
+  background: var(--color-orange-soft);
+}
+
+.join-queue-note p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+.join-queue-note strong {
+  color: var(--color-orange);
+}
+
+/* confirmation button */
+.join-queue-confirm {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.join-queue-confirm:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+/* flexible screen resizing */
+@media (min-width: 1024px) {
+  .join-queue-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+}
+
+@media (max-width: 479px) {
+  .join-queue-options {
+    grid-template-columns: 1fr;
+  }
+}
