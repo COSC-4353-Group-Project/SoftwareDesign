@@ -65,8 +65,6 @@ function TextField({ id, label, required, hint, error, ...inputProps }) {
       <input
         id={id}
         className={error ? 'field-input invalid' : 'field-input'}
-        aria-invalid={!!error}
-        aria-describedby={error || hint ? messageId : undefined}
         {...inputProps}
       />
       {error ? (
@@ -194,8 +192,6 @@ function RegistrationPage() {
                 type="checkbox"
                 checked={form.terms}
                 onChange={handleChange('terms')}
-                aria-invalid={!!errors.terms}
-                aria-describedby={errors.terms ? 'reg-terms-msg' : undefined}
               />
               <span>
                 I agree to the Terms of Service and Privacy Policy<span className="required"> *</span>
