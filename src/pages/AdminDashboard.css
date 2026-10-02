@@ -19,6 +19,14 @@
     color: var(--color-muted-foreground)
 }
 
+.admin-stats-text {
+    color: #c898fa
+}
+
+.admin-skip-text {
+    color: rgb(255, 225, 168)
+}
+
 .admin-layout {
     display: grid;
     gap: 24px;
@@ -50,11 +58,11 @@
     border: 2px solid var(--color-border);
     align-items: flex-start;
     border-radius: 24px;
-    background: linear-gradient(to bottom, var(--color-surface), var(--color-primary-soft));
+    /* background: linear-gradient(to bottom, var(--color-border), var(--color-primary-soft)); */ /*i think it's better w/o the extra gradient--makes the stats stand out more*/
 }
 
 .admin-stats-box {
-    border: 3px solid var(--color-border);
+    border: 3px solid var(--color-primary-highlight);
     margin-top: 16px;
     margin-left: 32px;
     margin-right: 8px;
@@ -62,7 +70,21 @@
     width: 220px;
     height: 150px;
     border-radius: 24px;
-    background: linear-gradient(to bottom, var(--color-primary-soft), var(--color-surface));
+    background: linear-gradient(to bottom, var(--color-primary-backdrop) 65%, var(--color-primary-highlight));
+    text-align: center;
+}
+
+.admin-skip-box {
+    border: 3px solid var(--color-orange-highlight);
+    margin-top: 16px;
+    margin-left: 32px;
+    margin-right: 8px;
+    margin-bottom: 16px;
+    width: 220px;
+    height: 150px;
+    border-radius: 24px;
+    background: linear-gradient(to bottom, var(--color-orange-backdrop) 65%, var(--color-orange-highlight));
+    text-align: center;
 }
 
 .admin-service-container {

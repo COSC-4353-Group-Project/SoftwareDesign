@@ -18,16 +18,24 @@ function AdminDashboard(){
         <div className="admin-layout">
             <div className="admin-stats-container">
                 <div className="admin-stats-box">
-                    Active stats box :3
+                    <p className="admin-stats-text">Parties Waiting</p>
+                    <h2>28</h2>
+                    <p className="admin-stats-text">79 guests total</p>
                 </div>
                 <div className="admin-stats-box">
-                    Active stats box :3
+                    <p className="admin-stats-text">Open Services</p>
+                    <h2>3 of 3</h2>
+                    <p className="admin-stats-text">Accepting new guests</p>
                 </div>
                 <div className="admin-stats-box">
-                    Active stats box :3
+                    <p className="admin-stats-text">Seated today</p>
+                    <h2>6</h2>
+                    <p className="admin-stats-text">Across All Services</p>
                 </div>
-                <div className="admin-stats-box">
-                    Active stats box :3
+                <div className="admin-skip-box">
+                    <p className="admin-skip-text">Skip Revenue Today</p>
+                    <h2>$69</h2>
+                    <p className="admin-skip-text">7 guests paid to skip</p>
                 </div>
             </div>
             <div>
