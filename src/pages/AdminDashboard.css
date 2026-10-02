@@ -62,16 +62,65 @@
     border-radius: 24px;
 }
 
+
+
+
+
+/*JUSTIN MAH CODE SECTIONS (Service section only)*/
+
+
+
+/* one service card. height grows with the content now instead of a fixed 175px */
 .admin-service-container {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    border: none;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 24px;
     border: 2px solid var(--color-border);
-    height: 175px;
+    background: var(--color-surface);
     margin-bottom: 16px;
     border-radius: 32px;
+}
+
+
+/* closed services are faded and should be red too. */
+.admin-service-container.closed {
+    opacity: 0.75;
+}
+
+/* wrap so the pill drops under the name on narrow phones, still need to test this.  */
+.admin-service-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-service-name {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* open/closed pill, color depends on active or inactive */
+.admin-service-pill {
+    padding: 2px 10px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.admin-service-pill.open {
+    border-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+    background: color-mix(in srgb, var(--color-success) 12%, transparent);
+    color: var(--color-success);
+}
+
+.admin-service-pill.closed {
+    border-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+    background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+    color: var(--color-danger);
 }
 
 @media (min-width: 1024px) {
