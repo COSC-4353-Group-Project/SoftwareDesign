@@ -1,6 +1,6 @@
 import "./UserDashboard.css";
-import { Clock, Users } from "lucide-react"; // icons for the live wait time cards
-import { useNavigate } from "react-router-dom"; // Thu: button click
+import { Clock, ListPlus, Users } from "lucide-react"; // icons for the join card + live wait time cards
+import { Link } from "react-router-dom";
 
 // layout shenanigans
 
@@ -12,7 +12,6 @@ const MOCK_NOTIFICATIONS = [
 ];
 
 function UserDashboard() {
-  const navigate = useNavigate();
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
@@ -28,34 +27,23 @@ function UserDashboard() {
           </div>
         </div>
       </div>
-      <div className="dashboard-table-header">
-        {" "}
-        {/** next header for "get a table" section */}
-        <div>
-          <h3>~Get a table~</h3>
-        </div>
-      </div>
+      {/* "Get a table" section, same layout as the test site */}
+      <section>
+        <h4 className="dashboard-section-title">Get a table</h4>
 
-      <div className="dashboard-layout">
-        {" "}
-        {/** these should be just regular boxes for now */}
-
-        {/* Thu: Removed Reservation, Join Waitlist is the only button */}
-        <div
-          className="dashboard-general-box dashboard-waitlist"
-          role="link"
-          tabIndex={0}
-          onClick={() => navigate("/join-queues")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") navigate("/join-queues");
-          }}
-          style={{ cursor: "pointer" }}
-        >
-          <h3>Join Waitlist</h3>
-        </div>
-      </div>
-
-      <p></p>
+        {/* Thu: Removed Reservation, Join Waitlist is the only button.
+            The whole card is a Link, so clicking anywhere on it goes to the join page
+            (and Enter works on it automatically, since Links are keyboard-friendly by default) */}
+        <Link to="/join-queues" className="dashboard-entry">
+          <span className="dashboard-entry-icon">
+            <ListPlus size={20} />
+          </span>
+          <span>
+            <span className="dashboard-entry-title">Join Waitlist</span>
+            <span className="dashboard-entry-desc">Here now? Get in line and we'll notify you.</span>
+          </span>
+        </Link>
+      </section>
 
       <div className="dashboard-layout-content">
         <div className="dashboard-main">
