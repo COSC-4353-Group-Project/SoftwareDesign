@@ -67,6 +67,11 @@
   gap: 16px;
 }
 
+/* notifications box sits on the left of its column so there's no gap next to the wait times */
+.dashboard-sidebar {
+  align-items: flex-start; /*important*/
+}
+
 .dashboard-box-hello {
   display: grid;
   place-items: left;
@@ -99,14 +104,6 @@
 
 }
 
-.dashboard-notif-box { 
-  display: grid;
-  place-items: center;
-  color: var(--color-orange);
-  font-size: 14px;
-  
-}
-
 .dashboard-waitlist {
   width: 300px; 
   height: 100px; 
@@ -128,29 +125,62 @@
   width: 560px; /* was 460px, this lines up with the HI user */
   height: 280px; /* was 250px , lines up with hi user now*/
   align-self: last baseline;
-  border: none; /*hidden so the cards float fancy style */
+  border: none; /*hidden so the cards float fancy style, just how i like it */
   background-color: transparent; /* was var(--color-surface) */
 }
 
+/* notifications card, title is inside it now cause it looked off..
+   margin-top is 21px less from ebfore .dashboard-wait-title's 32px, that cancels out the box's border so it lines up
+*/
 .dashboard-notifs {
-  width: 406px; /* was 432px, lines up with */
-  height: 200px;
-  border: 2px solid var(--color-orange-border); 
-  background-color: var(--color-orange-soft);}
+  width: 320px; /* was 406px, narrowed to match the test site */
+  max-width: 100%;
+  margin-top: 11px;
+  padding: 16px 20px;
+  border: 2px solid var(--color-orange-border);
+  border-radius: 12px;
+  background-color: var(--color-orange-soft);
+}
+
+.dashboard-notifs-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-orange);
+}
+
+.dashboard-notifs-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground);
+}
+
+/* removes the default bullets and indent so it's just a stack */
+.dashboard-notifs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-notif-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.dashboard-notif-detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
 
 .dashboard-wait-title {width: 560px; height: auto; align-self: last baseline; margin-top: 32px; margin-bottom: -6px; justify-items: start; } /* was width: 200px; height: 50px; now matches the grid width and lines up with "Hi, user!" */
 
 .dashboard-wait-title h4 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.dashboard-notif-title {width: 406px; height: auto; margin-top: 24px; margin-bottom: -6px; justify-items: start;} /* was width 200px height 50px now matches the notifications box, same style just copiede */
-
-.dashboard-notif-title h4 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;

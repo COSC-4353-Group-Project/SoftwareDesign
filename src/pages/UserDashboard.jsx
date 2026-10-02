@@ -4,6 +4,13 @@ import { useNavigate } from "react-router-dom"; // Thu: button click
 
 // layout shenanigans
 
+// Fake notifications until the backend exists, newest first.
+const MOCK_NOTIFICATIONS = [
+  { id: 3, title: "You're #3 in line", body: "Head back to the host stand soon.", time: "7:18 PM" },
+  { id: 2, title: "Moved up to #5", body: "Skip 3 spots · $9", time: "7:02 PM" },
+  { id: 1, title: "You joined the waitlist", body: "Dine-in · Party of 1–2 · you're #8", time: "6:51 PM" },
+];
+
 function UserDashboard() {
   const navigate = useNavigate();
   return (
@@ -115,12 +122,23 @@ function UserDashboard() {
           </div>
         </div>
         <aside className="dashboard-sidebar">
-          <p></p>
-          <p></p>
-          <div className="dashboard-notif-box dashboard-notif-title">
-            <h4>Recent notifications</h4>
+          {/* title lives inside the box now, top of the box lines up with "Live wait times" */}
+          <div className="dashboard-notifs">
+            <h4 className="dashboard-notifs-title">Recent notifications</h4>
+            {MOCK_NOTIFICATIONS.length === 0 ? (
+              <p className="dashboard-notifs-empty">Nothing yet. Updates about your spot show up here.</p>
+            ) : (
+              <ul className="dashboard-notifs-list">
+                {/* only the 4 newest, same as the test site */}
+                {MOCK_NOTIFICATIONS.slice(0, 4).map((notif) => (
+                  <li key={notif.id}>
+                    <p className="dashboard-notif-name">{notif.title}</p>
+                    <p className="dashboard-notif-detail">{notif.body} · {notif.time}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div className="dashboard-general-box dashboard-notifs"></div>
         </aside>
       </div>
     </div>
