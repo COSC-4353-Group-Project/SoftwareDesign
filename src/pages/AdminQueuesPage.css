@@ -1,0 +1,114 @@
+.admin-queues-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+/* puts heading and filters next to each other */
+.admin-queues-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-queues-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.admin-queues-header p {
+  margin: 4px 0 0;
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+}
+
+/* filter areas */
+.admin-queues-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-queues-filter {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-muted-foreground);
+  font-size: 14px;
+}
+
+/* summary cards */
+.admin-queues-summaries {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-queues-summary,
+.admin-queues-table-card,
+.admin-queues-details {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.admin-queues-summary {
+  min-height: 120px;
+}
+
+.admin-queues-page h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* queue list and details layout */
+.admin-queues-layout {
+  display: grid;
+  align-items: start;
+  gap: 24px;
+}
+
+.admin-queues-table-scroll,
+.admin-queues-details-body {
+  margin-top: 20px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+}
+
+.admin-queues-table-scroll {
+  min-height: 300px;
+  overflow-x: auto;
+}
+
+.admin-queues-details-body {
+  min-height: 240px;
+}
+
+/*summary cards on small screens */
+@media (min-width: 640px) {
+  .admin-queues-summaries {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* summary cards and a sidebar on big screens */
+@media (min-width: 1024px) {
+  .admin-queues-summaries {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-queues-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.admin-box-desc {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--color-muted-foreground);
+}
