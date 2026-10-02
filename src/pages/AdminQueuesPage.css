@@ -414,9 +414,6 @@
   .admin-queues-layout {
     grid-template-columns: 1fr;
   }
-<<<<<<< Updated upstream
-}
-=======
 }
 
 @media (max-width: 639px) {
@@ -429,4 +426,3 @@
     width: 100%;
   }
 }
->>>>>>> Stashed changes

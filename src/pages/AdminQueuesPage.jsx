@@ -1,8 +1,4 @@
 import "./AdminQueuesPage.css";
-<<<<<<< Updated upstream
-
-function AdminQueuesPage() {
-=======
 import { useState } from "react";
 
 // just a bunch of mock data
@@ -267,7 +263,6 @@ function AdminQueuesPage() {
     );
   }
 
->>>>>>> Stashed changes
   return (
     <div className="admin-queues-page">
       {/* placeholder, will change queues and statuses to filters */}
@@ -281,11 +276,6 @@ function AdminQueuesPage() {
         </div>
 
         <div className="admin-queues-filters">
-<<<<<<< Updated upstream
-          <div className="admin-queues-filter">Search guest name</div>
-          <div className="admin-queues-filter">All queues</div>
-          <div className="admin-queues-filter">All statuses</div>
-=======
           <input
             type="search"
             aria-label="Search guest name"
@@ -309,26 +299,11 @@ function AdminQueuesPage() {
             <option value="cancelled">Cancelled</option>
             <option value="done">Done</option>
           </select>
->>>>>>> Stashed changes
         </div>
       </div>
 
       {/* summary cards at top*/}
       <div className="admin-queues-summaries">
-<<<<<<< Updated upstream
-        <section className="admin-queues-summary">
-          <h2>Dine-in</h2>
-        </section>
-        <section className="admin-queues-summary">
-          <h2>Bar Seating</h2>
-        </section>
-        <section className="admin-queues-summary">
-          <h2>Patio</h2>
-        </section>
-        <section className="admin-queues-summary">
-          <h2>Average time waiting</h2>
-        </section>
-=======
         {SUMMARIES.map((summary) => (
           <section className="admin-queues-summary" key={summary.label}>
             <h2>{summary.label}</h2>
@@ -336,7 +311,6 @@ function AdminQueuesPage() {
             <p>{summary.hint}</p>
           </section>
         ))}
->>>>>>> Stashed changes
       </div>
 
       {/* queue list and party details */}
