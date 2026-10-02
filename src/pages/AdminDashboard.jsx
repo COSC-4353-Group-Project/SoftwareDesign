@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock, ListOrdered, Pencil, Power, Users } from 'lucide-react'
+import { Clock, ListOrdered, Pencil, Power, Users, Zap } from 'lucide-react'
 import './AdminDashboard.css'
 
 // legit just copied from the admin service page.
+// skipRevenue = dollars paid to skip today, skippersWaiting = paid skippers still in line.
+// These add up to the stat boxes: 28 parties, 79 guests, $69 skip revenue (7 guests paid: 3 + 3 + 1).
 const MOCK_SERVICES = [
-    { id: 1, name: 'Dine-in · Party of 1–2', description: 'Standard table seating for dates.', duration: 6, waiting: 9, guests: 16, isOpen: true },
-    { id: 2, name: 'Dine-in · Party of 3–6', description: 'Larger tables and booths. Longer Wait-Time.', duration: 9, waiting: 14, guests: 56, isOpen: true },
-    { id: 3, name: 'Bar Seating', description: 'First-come bar stools. Bartender Service', duration: 4, waiting: 5, guests: 8, isOpen: true },
-    { id: 4, name: 'Patio', description: 'Outdoor tables. Closed when it rains.', duration: 5, waiting: 0, guests: 0, isOpen: false },
+    { id: 1, name: 'Dine-in · Party of 1–2', description: 'Standard table seating for dates.', duration: 6, waiting: 9, guests: 16, skipRevenue: 21, skippersWaiting: 1, isOpen: true },
+    { id: 2, name: 'Dine-in · Party of 3–6', description: 'Larger tables and booths. Longer Wait-Time.', duration: 9, waiting: 14, guests: 56, skipRevenue: 36, skippersWaiting: 2, isOpen: true },
+    { id: 3, name: 'Bar Seating', description: 'First-come bar stools. Bartender Service', duration: 4, waiting: 5, guests: 7, skipRevenue: 12, skippersWaiting: 1, isOpen: true },
+    { id: 4, name: 'Patio', description: 'Outdoor tables. Closed when it rains.', duration: 5, waiting: 0, guests: 0, skipRevenue: 0, skippersWaiting: 0, isOpen: false },
 ]
 
 // Turns minutes into human(XD) text: 0 to "Now", 45 to "45 min", 135 to "2 hr 15 min".
@@ -105,6 +107,15 @@ function AdminDashboard(){
                                         : ' Not taking new guests'}
                                 </span>
                             </div>
+
+                            {/* orange skip revenue line, only shows up if someone paid to skip in this service today (when backend works) */}
+                            {service.skipRevenue > 0 && (
+                                <p className="admin-service-skip">
+                                    <Zap size={14} /> ${service.skipRevenue} skip revenue today
+                                    {service.skippersWaiting > 0 &&
+                                        ` · ${service.skippersWaiting} paid skipper${service.skippersWaiting === 1 ? '' : 's'} in line`}
+                                </p>
+                            )}
                         </div>
 
                         {/* ===== Funny little button work ===== */}
