@@ -35,10 +35,10 @@ const MOCK_DATA = {
       size: 2,
       queue: "small",
       joined: "2:21 PM",
-      wait: "3m",
+      wait: "300m",
       status: "waiting",
       paid: 15,
-      passedBy: 0,
+      passedBy: 67,
     },
     {
       id: "3",
@@ -87,11 +87,11 @@ function AdminQueuesPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState("2");
 
-  // ===== Queue filters =====
+  // Queue filters work now, pretty much all states
   // "all" means that filter is off
   const [queueFilter, setQueueFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  // ===== End queue filters =====
+  // End queue filters 
 
   // guest information and waiting parties in a queue
   const byId = Object.fromEntries(
@@ -120,11 +120,11 @@ function AdminQueuesPage() {
       .toLowerCase()
       .includes(search.trim().toLowerCase());
 
-    // ===== Queue filters =====
+    //  Queue filters 
     const queueMatches = queueFilter === "all" || party.queue === queueFilter;
     const statusMatches =
       statusFilter === "all" || party.status === statusFilter;
-    // ===== End queue filters =====
+    //  End queue filters 
 
     return nameMatches && queueMatches && statusMatches;
   }
@@ -256,16 +256,16 @@ function AdminQueuesPage() {
             )}
           </div>
 
-          {/* replaces the old Party size, Joined, and Est. wait columns */}
+          {/* replaces the old Party size, Joined, and Est. wait columns, way more condensed. */}
           <p className="admin-queues-meta">
             Party of {party.size} · joined {party.joined} · est. wait{" "}
             {party.wait}
           </p>
-          {/* ===== End guest cell ===== */}
+          {/* End guest cell  */}
         </td>
         <td>{QUEUES.find((queue) => queue.id === party.queue).label}</td>
         <td>
-          {/* status pill, color comes from the status class */}
+          {/* status pill, color comes from the status class, should inherit. */}
           <span className={`admin-queues-pill ${party.status}`}>
             {STATUS_LABELS[party.status]}
           </span>
@@ -350,7 +350,7 @@ function AdminQueuesPage() {
             <option value="cancelled">Cancelled</option>
             <option value="done">Done</option>
           </select>
-          {/* ===== End queue filters ===== */}
+          {/*  End queue filters  */}
         </div>
       </div>
 
@@ -400,7 +400,7 @@ function AdminQueuesPage() {
                 {activeRows.map((party) => createRow(party))}
                 {completedRows.map((party) => createRow(party, true))}
 
-                {/* message when the filters hide every party */}
+                {/* message when the filters hide every party, needed with filters or its just empty */}
                 {activeRows.length === 0 && completedRows.length === 0 && (
                   <tr>
                     <td colSpan="5" className="admin-queues-empty">
