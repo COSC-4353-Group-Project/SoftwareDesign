@@ -1,5 +1,6 @@
 import "./AdminQueuesPage.css";
 import { useState } from "react";
+import { Bell, Zap } from "lucide-react"; // icons for the pill tags
 
 // just a bunch of mock data
 const QUEUES = [
@@ -26,6 +27,7 @@ const MOCK_DATA = {
       wait: "10m",
       status: "waiting",
       paid: 0,
+      passedBy: 1, // how many paid skippers moved ahead of this guest
     },
     {
       id: "2",
@@ -36,6 +38,7 @@ const MOCK_DATA = {
       wait: "3m",
       status: "waiting",
       paid: 15,
+      passedBy: 0,
     },
     {
       id: "3",
@@ -46,6 +49,7 @@ const MOCK_DATA = {
       wait: "3m",
       status: "waiting",
       paid: 0,
+      passedBy: 0,
     },
     {
       id: "4",
@@ -56,6 +60,7 @@ const MOCK_DATA = {
       wait: "3m",
       status: "waiting",
       paid: 0,
+      passedBy: 0,
     },
   ],
   order: {
@@ -82,6 +87,12 @@ function AdminQueuesPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState("2");
 
+  // ===== Queue filters =====
+  // "all" means that filter is off
+  const [queueFilter, setQueueFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  // ===== End queue filters =====
+
   // guest information and waiting parties in a queue
   const byId = Object.fromEntries(
     data.parties.map((party) => [party.id, party]),
@@ -103,9 +114,19 @@ function AdminQueuesPage() {
     });
   });
 
-  // search by name
+  // search by name, then check the queue and status filters
   function matches(party) {
-    return party.name.toLowerCase().includes(search.trim().toLowerCase());
+    const nameMatches = party.name
+      .toLowerCase()
+      .includes(search.trim().toLowerCase());
+
+    // ===== Queue filters =====
+    const queueMatches = queueFilter === "all" || party.queue === queueFilter;
+    const statusMatches =
+      statusFilter === "all" || party.status === statusFilter;
+    // ===== End queue filters =====
+
+    return nameMatches && queueMatches && statusMatches;
   }
 
   const activeRows = QUEUES.flatMap((queue) =>
@@ -197,6 +218,7 @@ function AdminQueuesPage() {
         className={[
           selectedId === party.id ? "selected" : "",
           completed ? "completed" : "",
+          !completed && party.paid > 0 ? "paid" : "",
         ]
           .filter(Boolean)
           .join(" ")}
@@ -204,30 +226,50 @@ function AdminQueuesPage() {
       >
         <td>{completed ? "—" : `#${positions[party.id]}`}</td>
         <td>
-          <button
-            type="button"
-            className="admin-queues-guest"
-            onClick={() => setSelectedId(party.id)}
-            aria-label={`View details for ${party.name}`}
-            aria-pressed={selectedId === party.id}
-          >
-            {party.name}
-          </button>
+          {/* ===== Guest cell: name, pill tags, and a small info line ===== */}
+          <div className="admin-queues-name-row">
+            <button
+              type="button"
+              className="admin-queues-guest"
+              onClick={() => setSelectedId(party.id)}
+              aria-label={`View details for ${party.name}`}
+              aria-pressed={selectedId === party.id}
+            >
+              {party.name}
+            </button>
+
+            {/* replaces the old Paid priority column */}
+            {party.paid > 0 && (
+              <span className="admin-queues-pill paid">
+                <Zap size={12} /> Paid ${party.paid.toFixed(2)}
+              </span>
+            )}
+
+            {party.passedBy > 0 && (
+              <span
+                className="admin-queues-pill"
+                title="This guest got an in-app notice each time a paid skipper moved ahead of them"
+              >
+                <Bell size={12} /> Passed by {party.passedBy} skipper
+                {party.passedBy === 1 ? "" : "s"} · notified
+              </span>
+            )}
+          </div>
+
+          {/* replaces the old Party size, Joined, and Est. wait columns */}
+          <p className="admin-queues-meta">
+            Party of {party.size} · joined {party.joined} · est. wait{" "}
+            {party.wait}
+          </p>
+          {/* ===== End guest cell ===== */}
         </td>
-        <td>{party.size}</td>
         <td>{QUEUES.find((queue) => queue.id === party.queue).label}</td>
-        <td>{party.joined}</td>
-        <td>{party.wait}</td>
         <td>
-          {party.paid > 0 ? (
-            <span className="admin-queues-priority">
-              ${party.paid.toFixed(2)}
-            </span>
-          ) : (
-            "—"
-          )}
+          {/* status pill, color comes from the status class */}
+          <span className={`admin-queues-pill ${party.status}`}>
+            {STATUS_LABELS[party.status]}
+          </span>
         </td>
-        <td>{STATUS_LABELS[party.status]}</td>
         <td onClick={(event) => event.stopPropagation()}>
           {!completed && (
             <div className="admin-queues-actions">
@@ -265,7 +307,7 @@ function AdminQueuesPage() {
 
   return (
     <div className="admin-queues-page">
-      {/* placeholder, will change queues and statuses to filters */}
+      {/* page title, search, and queue/status filters */}
       <div className="admin-queues-header">
         <div>
           <p className="admin-queues-brand">BribeSmart</p>
@@ -284,7 +326,12 @@ function AdminQueuesPage() {
             onChange={(event) => setSearch(event.target.value)}
           />
 
-          <select aria-label="Filter by queue" defaultValue="all">
+          {/* ===== Queue filters ===== */}
+          <select
+            aria-label="Filter by queue"
+            value={queueFilter}
+            onChange={(event) => setQueueFilter(event.target.value)}
+          >
             <option value="all">All queues</option>
             {QUEUES.map((queue) => (
               <option key={queue.id} value={queue.id}>
@@ -293,12 +340,17 @@ function AdminQueuesPage() {
             ))}
           </select>
 
-          <select aria-label="Filter by status" defaultValue="all">
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
             <option value="all">All statuses</option>
             <option value="waiting">Waiting</option>
             <option value="cancelled">Cancelled</option>
             <option value="done">Done</option>
           </select>
+          {/* ===== End queue filters ===== */}
         </div>
       </div>
 
@@ -338,12 +390,8 @@ function AdminQueuesPage() {
               <thead>
                 <tr>
                   <th scope="col">Position</th>
-                  <th scope="col">Guest name</th>
-                  <th scope="col">Party size</th>
+                  <th scope="col">Guest</th>
                   <th scope="col">Seating Preference</th>
-                  <th scope="col">Joined</th>
-                  <th scope="col">Est. wait</th>
-                  <th scope="col">Paid priority</th>
                   <th scope="col">Status</th>
                   <th scope="col">Actions</th>
                 </tr>
@@ -351,6 +399,15 @@ function AdminQueuesPage() {
               <tbody>
                 {activeRows.map((party) => createRow(party))}
                 {completedRows.map((party) => createRow(party, true))}
+
+                {/* message when the filters hide every party */}
+                {activeRows.length === 0 && completedRows.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="admin-queues-empty">
+                      No parties match these filters.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -399,6 +456,14 @@ function AdminQueuesPage() {
                   <div>
                     <dt>Status</dt>
                     <dd>{STATUS_LABELS[selected.status]}</dd>
+                  </div>
+                  <div>
+                    <dt>Passed by</dt>
+                    <dd>
+                      {selected.passedBy > 0
+                        ? `${selected.passedBy} paid skipper${selected.passedBy === 1 ? "" : "s"}`
+                        : "—"}
+                    </dd>
                   </div>
                 </dl>
 
