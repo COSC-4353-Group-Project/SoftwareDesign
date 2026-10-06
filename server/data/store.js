@@ -1,0 +1,51 @@
+// This will be our memory for assignment 3.
+// it all resets when the server restarts. Assignment 4 will turn this into a DB. 
+
+// Starting services, just stolen from the frontend services.
+function seedServices() {
+  return [
+    { id: 1, 
+      name: 'Dine-in · Party of 1–2', 
+      description: 'Standard table seating for dates.', 
+      duration: 45, 
+      priority: 'high', 
+      isOpen: true },
+    { id: 2, 
+      name: 'Dine-in · Party of 3–6', 
+      description: 'Larger tables and booths. Longer Wait-Time.', 
+      duration: 60, 
+      priority: 'medium', 
+      isOpen: true },
+    { id: 3, 
+      name: 'Bar Seating', 
+      description: 'First-come bar stools. Bartender Service', 
+      duration: 20, 
+      priority: 'medium', 
+      isOpen: true },
+    { id: 4, 
+      name: 'Patio', 
+      description: 'Outdoor tables. Closed when it rains.', 
+      duration: 40, 
+      priority: 'low', 
+      isOpen: false },
+  ]
+}
+
+// Every module reads and writes these arrays. this is where you add a new array if your modeule needs one.
+export const store = {
+  users: [],
+  services: seedServices(),
+  queueEntries: [],
+  notifications: [],
+  history: [],
+}
+
+// Puts the store back to its starting data. Tests call this before each test (unit tests)
+// basically resetting changes on each server restart. 
+export function resetStore() {
+  store.users = []
+  store.services = seedServices()
+  store.queueEntries = []
+  store.notifications = []
+  store.history = []
+}
