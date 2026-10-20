@@ -1,15 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Clock, Pencil, Users } from 'lucide-react'
 import './AdminServicesPage.css'
 
-// Fake services until the backend exists. Same services the user dashboard shows,
-// plus a closed one so we can see what the "Closed" pill looks like.
-const MOCK_SERVICES = [
-  { id: 1, name: 'Dine-in · Party of 1–2', description: 'Standard table seating for dates.', duration: 45, priority: 'high', waiting: 9, isOpen: true },
-  { id: 2, name: 'Dine-in · Party of 3–6', description: 'Larger tables and booths. Longer Wait-Time.', duration: 60, priority: 'medium', waiting: 14, isOpen: true },
-  { id: 3, name: 'Bar Seating', description: 'First-come bar stools. Bartender Service', duration: 20, priority: 'medium', waiting: 5, isOpen: true },
-  { id: 4, name: 'Patio', description: 'Outdoor tables. Closed when it rains.', duration: 40, priority: 'low', waiting: 0, isOpen: false },
-]
+// Services now come from the backend (GET /api/services, see server/routes/services.js).
+// The starting ones live in server/data/store.js.
 
 // TODO: contact prof about what "priority level" is supposed to mean for a service.
 // The assignment 2 checklist requires the field but never explains it. For now it only decides
@@ -29,6 +23,8 @@ const EMPTY_FORM = { name: '', description: '', duration: '', priority: '', isOp
 
 // Checks every field and returns an object of error messages.
 // An empty string means that field is fine.
+// The backend checks the same rules again (server/validators/serviceValidator.js); this copy
+// just gives instant feedback without waiting on the server.
 function validate(form, services, editingId) {
   const errors = { name: '', description: '', duration: '', priority: '' }
 
@@ -71,11 +67,33 @@ function validate(form, services, editingId) {
 
 // Service management: staff create and edit the services guests can queue for.
 function AdminServicesPage() {
-  const [services, setServices] = useState(MOCK_SERVICES)
+  const [services, setServices] = useState([])
   const [form, setForm] = useState(EMPTY_FORM)
   const [errors, setErrors] = useState({})
   // id of the service being edited, or null when the form is making a new service, prevents a crash i had happen...
   const [editingId, setEditingId] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  // message under the save button when the server says no (or can't be reached)
+  const [saveError, setSaveError] = useState('')
+
+  // Load the services once, when the page first shows up, backend stoof finally 
+  // The empty [] at the end means "only run this on the first render".
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const res = await fetch('/api/services')
+        if (!res.ok) {
+          throw new Error(`Server responded with ${res.status}`)
+        }
+        setServices(await res.json())
+      } catch {
+        setLoadError('Could not load services. Is the backend running? (npm run server)')
+      }
+      setLoading(false)
+    }
+    loadServices()
+  }, [])
 
   // runs on every keystroke / checkbox click, copies the form and changes the one field
   function handleChange(field, value) {
@@ -100,13 +118,15 @@ function AdminServicesPage() {
     setEditingId(null)
     setForm(EMPTY_FORM)
     setErrors({})
+    setSaveError('')
   }
 
-  function handleSubmit(e) {
-    e.preventDefault() // stop the browser from reloading the page, had this issue come up twice during testing. 
+  async function handleSubmit(e) {
+    e.preventDefault() // stop the browser from reloading the page, had this issue come up twice during testing.
 
     const newErrors = validate(form, services, editingId)
     setErrors(newErrors)
+    setSaveError('')
     if (newErrors.name || newErrors.description || newErrors.duration || newErrors.priority) {
       return // something is wrong, don't save
     }
@@ -118,23 +138,54 @@ function AdminServicesPage() {
       priority: form.priority,
       isOpen: form.isOpen,
     }
+// BACKEND STOOF
 
-    if (editingId === null) {
-      // new service: next id is one higher than the biggest id so far, nobody is waiting yet
-      let biggestId = 0
-      for (const service of services) {
-        if (service.id > biggestId) biggestId = service.id
+
+    // new service: POST /api/services. editing: PUT /api/services/:id
+    let url = '/api/services'
+    let method = 'POST'
+    if (editingId !== null) {
+      url = `/api/services/${editingId}`
+      method = 'PUT'
+    }
+
+    let res
+    let data
+    try {
+      res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      })
+      data = await res.json()
+    } catch {
+      // fetch failed
+      setSaveError('Could not reach the server. Is the backend running?')
+      return
+    }
+
+    if (!res.ok) {
+      // the server sends one message per field in the same shape as our errors object
+      if (data.fields) {
+        setErrors(data.fields)
       }
-      setServices([...services, { id: biggestId + 1, waiting: 0, ...fields }])
+      setSaveError(data.error)
+      return
+    }
+
+    // data is the saved service, exactly as the server stored it
+    if (editingId === null) {
+      setServices([...services, data])
     } else {
-      // editing: replace the matching service 
+      // editing: replace the matching service
       setServices(services.map((service) =>
-        service.id === editingId ? { ...service, ...fields } : service
+        service.id === editingId ? data : service
       ))
     }
 
     resetForm()
   }
+//END BACKEND STOOF
 
   // copy of the list sorted high to medium to low. makes a copy first
   // because .sort() changes the array it's called on, and i can't change state directly, mdiness
@@ -150,6 +201,9 @@ function AdminServicesPage() {
         {/* left column: one card per service */}
         <section className="services-list">
           <h2 className="services-count">{services.length} services</h2>
+
+          {loading && <p className="service-hint">Loading services…</p>}
+          {loadError && <p className="service-error">{loadError}</p>}
 
           {sortedServices.map((service) => (
             // purple outline on the card that's currently in the form
@@ -169,7 +223,8 @@ function AdminServicesPage() {
 
                 <div className="service-stats">
                   <span className="service-stat"><Clock size={14} /> {service.duration} min per party</span>
-                  <span className="service-stat"><Users size={14} /> {service.waiting} waiting</span>
+                  {/* TODO: the backend doesn't count who's waiting yet, that needs Thu's queue module. Shows 0 until then. */}
+                  <span className="service-stat"><Users size={14} /> {service.waiting ?? 0} waiting</span>
                 </div>
               </div>
 
@@ -293,6 +348,7 @@ function AdminServicesPage() {
                 <button type="button" className="service-cancel-button" onClick={resetForm}>Cancel</button>
               )}
             </div>
+            {saveError && <p className="service-error">{saveError}</p>}
           </form>
         </aside>
       </div>
