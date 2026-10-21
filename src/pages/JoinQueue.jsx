@@ -30,6 +30,8 @@ function JoinQueue() {
   const navigate = useNavigate();
   const [partySize, setPartySize] = useState(2);
   const [seating, setSeating] = useState("Dine-in");
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState("");
 
   // changing the summary based on the number of guests, only changes with Dine-in option
   const queue =
@@ -39,25 +41,50 @@ function JoinQueue() {
         ? MOCK_QUEUES.small
         : MOCK_QUEUES.large;
 
-  // creates a mock data to send to queue status page
-  function handleJoin(event) {
+  // send user's selection to the backend to join the queue
+  async function handleJoin(event) {
     event.preventDefault();
 
-    const position = queue.partiesAhead + 1;
-    const entry = {
-      serviceName: queue.serviceName,
-      partySize,
-      seatingPreference: seating,
-      position,
-      initialPosition: position,
-      minutesPerParty: queue.waitMinutes / position,
-      type: "walk-in",
-      joinedAt: new Date().toISOString(),
-      notes: "",
-      skips: [],
-    };
+    if (joining) return;
 
-    navigate("/status", { state: { entry } });
+    setJoining(true);
+    setError("");
+
+    // pick service based on user's input
+    const serviceId = seating === "Bar Seating" ? 3 : partySize <= 2 ? 1 : 2;
+
+    try {
+      // submit queue requests
+      const response = await fetch("/api/queues/join", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          serviceId,
+          partySize,
+          seatingPreference: seating,
+        }),
+      });
+
+      const data = await response.json();
+
+      // error check
+      if (!response.ok) {
+        const message = data.fields
+          ? Object.values(data.fields)[0]
+          : data.error;
+
+        throw new Error(message || "Unable to join queue.");
+      }
+
+      // Pass created entry to existing Status page
+      navigate("/status", { state: { entry: data } });
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setJoining(false);
+    }
   }
 
   return (
@@ -158,13 +185,24 @@ function JoinQueue() {
           {/* lol */}
           <div className="join-queue-note">
             <p>
-              <strong>No charge to join.</strong> Save the bribe for later, you can pay to move up the queue!
+              <strong>No charge to join.</strong> Save the bribe for later, you
+              can pay to move up the queue!
             </p>
           </div>
 
           {/* submits and sends to status page. */}
-          <button type="submit" className="join-queue-confirm">
-            Confirm & Join Queue
+          {error && (
+            <p className="join-queue-description" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="join-queue-confirm"
+            disabled={joining}
+          >
+            {joining ? "Joining..." : "Confirm & Join Queue"}
           </button>
         </aside>
       </form>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import './RegistrationPage.css'
 
 const NAME_MAX = 60
@@ -126,7 +127,8 @@ function RegistrationPage() {
           <p className="register-subtitle">
             Your account is ready. We'll text {form.phone} when your table is ready.
           </p>
-          <a href="/login" className="btn-primary btn-link">Continue to sign in</a>
+          {/* straight to the dashboard now that it's built, they just made an account so no need to sign in again */}
+          <Link to="/dashboard" className="btn-primary btn-link">Continue to dashboard</Link>
         </div>
       </div>
     )

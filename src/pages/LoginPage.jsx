@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import './LoginPage.css'
 
 const NAME_MAX = 60
@@ -77,6 +78,7 @@ function LoginPage() {
     const [errors, setErrors] = useState({})
     const [busy, setBusy] = useState(false)
     const [done, setDone] = useState(false)
+    const navigate = useNavigate()
 
     // Updating the full name/phone fields
     const handleChange = (key) => e => {
@@ -101,7 +103,7 @@ function LoginPage() {
     // The data to send is: name, normalizePhone(form.phone), email.
     await new Promise((resolve) => setTimeout(resolve, 800))
     setBusy(false)
-    setDone(true)
+    navigate('/dashboard')
   }
 
     return (
@@ -109,7 +111,7 @@ function LoginPage() {
             <div className="login-card">
                 <h1 className="login-title">Sign In to BribeQueue</h1>
 
-                <form className="login-form">
+                <form className="login-form" onSubmit={handleSubmit} noValidate>
                     <TextField
                     id="sign-name"
                     label="Full name"
@@ -139,8 +141,8 @@ function LoginPage() {
                     onBlur={handleBlur('phone')}
                     />
 
-                    <button className="login-btn-primary">
-                        {"Sign In"}
+                    <button type="submit" className="login-btn-primary" disabled={busy}>
+                        {busy ? "Signing In..." : "Sign In"}
                     </button>
 
                     <button className="goog-btn-primary">

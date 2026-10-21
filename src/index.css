@@ -10,6 +10,8 @@
   --color-primary-hover: #695489;
   --color-primary-soft: #2b2040;     /* tinted backgrounds */
   --color-primary-text: #b89be0;     /* purple text/links (shall see if its readable) */
+  --color-primary-highlight: #8855e0;
+  --color-primary-backdrop: #1e1729;
 
   --color-danger: #f87171;           /* error messages important */
   --color-success: #4ade80;          /* "table ready" / good news */
@@ -17,6 +19,8 @@
   --color-orange: #ffbb55;           /* orange text/icons */
   --color-orange-soft: #2a1f14;      /* orange tinted backgrounds */
   --color-orange-border: #8a5d1c;
+  --color-orange-highlight: #ffc04a;
+  --color-orange-backdrop: #382d18;
 
   color-scheme: dark;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;

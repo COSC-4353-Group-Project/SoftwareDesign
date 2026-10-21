@@ -15,47 +15,75 @@
   /* border: 2px solid var(--color-border); */ /*used for testing*/
 }
 
-.dashboard-table-header { /*header doesn't need to span the width of the page*/
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  border: 2px solid var(--color-border);
-  border-radius: 64px;
-  align-content: center;
-  justify-content: center;
-  gap: 12px;
-  margin-left: 380px;
-  margin-bottom: 24px;
+/* small grey uppercase heading, same look as "Live wait times" */
+.dashboard-section-title {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: var(--color-muted-foreground);
-  width: 300px;
-  height: 50px;
-  /* background-color: var(--color-surface); */ /*eehhh not crazy about it*/
 }
 
-.dashboard-layout {
+/* Join Waitlist card: icon on the left, text on the right. Same width as the wait times so they line up */
+.dashboard-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 560px;
+  max-width: 100%; /* never wider than the screen on phones */
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-foreground);
+  text-decoration: none; /* it's a Link, so remove the underline cause gross */
+  transition: border-color 150ms;
+}
+
+/* purple border on hovere */
+.dashboard-entry:hover {
+  border-color: var(--color-primary);
+}
+
+/* outline for keyboard users tabbing onto it */
+.dashboard-entry:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+/* purple square behind the icon */
+.dashboard-entry-icon {
   display: grid;
-  gap: 24px;
-  /* Thu: justify middle Join button */
-  grid-template-columns: 1fr;
-  width: 300px;
-  margin-left: 380px;
-  /* border: 2px solid var(--color-border); used for testing */
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0; /* keeps it square even if the text wraps */
+  border-radius: 8px;
+  background: var(--color-primary);
+}
+
+/* spans are inline by default, display: block puts title and description on their own lines */
+.dashboard-entry-title {
+  display: block;
+  font-weight: 600;
+}
+
+.dashboard-entry-desc {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-muted-foreground);
 }
 
 .dashboard-layout-content {
   display: grid;
   gap: 24px;
-  /* border: 2px solid var(--color-border); used for testing */
 }
 
 @media (min-width: 1024px) { /*1024px original*/ /*@media is used to apply to different styles/devices ex: checks for width and heigh of device*/
-  /* 
-  Thu: justify middle Join button
-  .dashboard-layout {
-    grid-template-columns: 530px 360px; handles column sizing weirdly enough
-  } */
   .dashboard-layout-content {
-    grid-template-columns: 560px 430px; /* was 500px 490px, sized so the wait times and notifications keep a 48px gap (same total) */
+    grid-template-columns: 560px 430px; /* was 500px 490px, sized so the wait times and notifications keep a 48px gap */
   }
 }
 
@@ -65,6 +93,14 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 16px;
+  /* PHONE FIX #1: grid columns won't shrink smaller than what's inside them unless you say so.
+     Without this, the wait times column stayed 560px wide on a 375px phone */
+  min-width: 0;
+}
+
+/* notifications box sits on the left of its column so there's no gap next to the wait times */
+.dashboard-sidebar {
+  align-items: flex-start; /*important*/
 }
 
 .dashboard-box-hello {
@@ -77,8 +113,16 @@
   font-size: 14px;
 }
 
-.dashboard-hi {width: 400px; height: 50px;}
-.dashboard-address {width: 400px; height: 50px;}
+/* PHONE FIX #2: the plain div around "Hi, user!" and the address, same min-width trick as #1.
+   Without this, the div stayed 400px wide because of the boxes inside it forced it to be bigger*/
+.dashboard-header > div {
+  min-width: 0;
+}
+
+/* PHONE FIX #3: max-width: 100% = use the fixed 400px on big screens, but never get wider than the screen.
+   (only works because of #2, the parent has to be allowed to shrink first) */
+.dashboard-hi {width: 400px; max-width: 100%; height: 50px;}
+.dashboard-address {width: 400px; max-width: 100%; height: 50px;}
 
 /*just structure, no width or height for multiple uses*/
 .dashboard-general-box { 
@@ -99,58 +143,77 @@
 
 }
 
-.dashboard-notif-box { 
-  display: grid;
-  place-items: center;
-  color: var(--color-orange);
-  font-size: 14px;
-  
-}
-
-.dashboard-waitlist {
-  width: 300px; 
-  height: 100px; 
-  justify-self: center;
-  border: 3px solid var(--color-border);
-  background-color: var(--color-primary-soft);
-}
-
-.dashboard-reservation {
-  width: 300px; 
-  height: 100px; 
-  justify-self: center; 
-  margin-left: 128px;
-  border: 3px solid var(--color-border);
-  background-color: var(--color-primary-soft);
-}
-
 .dashboard-waittimes {
   width: 560px; /* was 460px, this lines up with the HI user */
+  max-width: 100%; /* PHONE FIX #4: shrinks the 560px to fit on phones (only works because of #1) */
   height: 280px; /* was 250px , lines up with hi user now*/
   align-self: last baseline;
-  border: none; /*hidden so the cards float fancy style */
+  border: none; /*hidden so the cards float fancy style, just how i like it */
   background-color: transparent; /* was var(--color-surface) */
 }
 
+/* notifications card, title is inside it now cause it looked off..
+   margin-top is 21px less from ebfore .dashboard-wait-title's 32px, that cancels out the box's border so it lines up
+*/
 .dashboard-notifs {
-  width: 406px; /* was 432px, lines up with */
-  height: 200px;
-  border: 2px solid var(--color-orange-border); 
-  background-color: var(--color-orange-soft);}
-
-.dashboard-wait-title {width: 560px; height: auto; align-self: last baseline; margin-top: 32px; margin-bottom: -6px; justify-items: start; } /* was width: 200px; height: 50px; now matches the grid width and lines up with "Hi, user!" */
-
-.dashboard-wait-title h4 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  width: 320px; /* was 406px, narrowed to match the test site */
+  max-width: 100%;
+  margin-top: 11px;
+  padding: 16px 20px;
+  border: 2px solid var(--color-orange-border);
+  border-radius: 12px;
+  background-color: var(--color-orange-soft);
 }
 
-.dashboard-notif-title {width: 406px; height: auto; margin-top: 24px; margin-bottom: -6px; justify-items: start;} /* was width 200px height 50px now matches the notifications box, same style just copiede */
+.dashboard-notifs-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-orange);
+}
 
-.dashboard-notif-title h4 {
+.dashboard-notifs-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-muted-foreground);
+}
+
+/* removes the default bullets and indent so it's just a stack */
+.dashboard-notifs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-notif-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.dashboard-notif-detail {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-muted-foreground);
+}
+
+.dashboard-wait-title {
+  width: 560px; 
+  max-width: 100%; 
+  height: auto; align-self: 
+  last baseline; 
+  margin-top: 32px; 
+  margin-bottom: -6px; 
+  justify-items: start; 
+} 
+/* was width: 200px; height: 50px; now matches the grid width and lines up with "Hi, user!" */
+/* PHONE FIX #5: the max-width: 100% on the line above, same idea as #4 for the "Live wait times" heading */
+
+.dashboard-wait-title h4 {
   margin: 0;
   font-size: 13px;
   font-weight: 600;
@@ -226,4 +289,22 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* PHONE FIX #6: everything in here only applies on screens 639px wide or less (phones) */
+@media (max-width: 639px) {
+  /* wait time cards stack in one column instead of two squished side by side */
+  .wait-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* box grows to fit the stacked cards instead of being stuck at 280px tall with a scrollbar */
+  .dashboard-waittimes {
+    height: auto;
+  }
+
+  /* full width so it lines up with the cards above it (looks nicer, wasn't causing the overflow) */
+  .dashboard-notifs {
+    width: 100%;
+  }
 }
