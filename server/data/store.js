@@ -31,13 +31,38 @@ function seedServices() {
   ]
 }
 
+//Vince: I think this is right? I'm just basically copying the layout Justin has right above but for the history
+function seedHistory() {
+  const services = seedServices()
+  return [
+    { id: 1,
+      service: services[0].name,
+      date: '9-17-2026',
+      bribe: 0.00,
+      status: 'Entered'
+    },
+    { id: 2,
+      service: services[3].name,
+      date: '9-19-2026',
+      bribe: 150.00,
+      status: 'Entered'
+    },
+    { id: 3,
+      service: services[2].name,
+      date: '9-27-2026',
+      bribe: 0.00,
+      status: 'Canceled'
+    }
+  ]
+}
+
 // Every module reads and writes these arrays. this is where you add a new array if your modeule needs one.
 export const store = {
   users: [],
   services: seedServices(),
   queueEntries: [],
   notifications: [],
-  history: [],
+  history: seedHistory()
 }
 
 // Puts the store back to its starting data. Tests call this before each test (unit tests)
@@ -47,5 +72,5 @@ export function resetStore() {
   store.services = seedServices()
   store.queueEntries = []
   store.notifications = []
-  store.history = []
+  store.history = seedHistory()
 }

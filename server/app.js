@@ -1,5 +1,6 @@
 import express from 'express'
 import servicesRouter from './routes/services.js'
+import historyRouter from './routes/history.js'
 
 // Builds the Express app but does not start it. index.js starts it;
 // the tests import it directly so Supertest can send it fake requests.
@@ -15,6 +16,8 @@ app.get('/api/health', (req, res) => {
 
 // One line per module. when you add a new service, ADD IT HERE!!!
 app.use('/api/services', servicesRouter)
+//I honestly have no idea what I'm doing, kinda just copying whatcha got here Justin
+app.use('/api/history', historyRouter)
 
 // Any /api path that didn't match a route above if they forgot to add it. 
 app.use((req, res) => {
