@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom"; // useLocation to read queue info from JoinQueue
 import { Check, ChevronDown, Clock, Crown, Users, Zap } from "lucide-react";
 import "./QueueStatusPage.css";
@@ -409,7 +409,11 @@ function CancelButton({ label, onConfirm }) {
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            await onConfirm();
+            try {
+              await onConfirm();
+            } finally {
+              setBusy(false);
+            }
           }}
         >
           Yes, {label.toLowerCase()}
@@ -434,6 +438,42 @@ export default function QueueStatusPage() {
   const [entry, setEntry] = useState(() => location.state?.entry ?? MOCK_ENTRY);
   const navigate = useNavigate();
 
+  // Thu:
+  const [statusError, setStatusError] = useState("");
+  const entryId = location.state?.entry?.id;
+
+  // retrieve user's current queue info from backend
+  useEffect(() => {
+    if (!entryId) return;
+
+    const controller = new AbortController();
+
+    async function fetchQueueStatus() {
+      try {
+        const response = await fetch(`/api/queues/${entryId}`, {
+          signal: controller.signal,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to retrieve queue status.");
+        }
+
+        setEntry(data);
+        setStatusError("");
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setStatusError(err.message || "Something went wrong.");
+        }
+      }
+    }
+
+    fetchQueueStatus();
+
+    return () => controller.abort();
+  }, [entryId]);
+
   // no backend yet, so just update the local copy new position add to the skips list
   function handleSkip(skip) {
     const purchase = { ...skip, at: new Date().toISOString() };
@@ -445,12 +485,41 @@ export default function QueueStatusPage() {
   }
 
   // no backend yet, so "leaving" just sends them to the dashboard YET, waiting on this
+  // async function handleLeave() {
+  //   navigate("/dashboard");
+  // }
+
+  // Thu: cancel user's queue entry
   async function handleLeave() {
-    navigate("/dashboard");
+    if (!entry.id) {
+      setStatusError("No active queue entry was found.");
+      return;
+    }
+
+    setStatusError("");
+
+    try {
+      const response = await fetch(`/api/queues/${entry.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to leave queue.");
+      }
+
+      // leave status page after cancellation
+      navigate("/dashboard");
+    } catch (err) {
+      setStatusError(err.message || "Something went wrong.");
+    }
   }
 
   return (
     <div className="queue-page">
+      {/* Thu: just in case if request fails */}
+      {statusError && <p role="alert">{statusError}</p>}
       {/* header: title & service name on the left, status badge on the right */}
       <div className="queue-header">
         <div>
