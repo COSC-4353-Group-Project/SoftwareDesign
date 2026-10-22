@@ -1,4 +1,5 @@
 import express from 'express'
+import authRouter from './routes/auth.js'
 import servicesRouter from './routes/services.js'
 import historyRouter from './routes/history.js'
 
@@ -15,6 +16,7 @@ app.get('/api/health', (req, res) => {
 })
 
 // One line per module. when you add a new service, ADD IT HERE!!!
+app.use('/api/auth', authRouter)
 app.use('/api/services', servicesRouter)
 //I honestly have no idea what I'm doing, kinda just copying whatcha got here Justin
 app.use('/api/history', historyRouter)

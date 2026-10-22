@@ -91,6 +91,8 @@ function RegistrationPage() {
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  // message from the server, like "An account with this phone number already exists."
+  const [serverError, setServerError] = useState('')
 
   // Update a field; if it's already showing an error, re-check it live so the error clears as they fix it.
   const handleChange = (key) => (e) => {
@@ -112,10 +114,41 @@ function RegistrationPage() {
     if (!isValid(nextErrors)) return
 
     setBusy(true)
-    // this will be replaced when the backend is built. 
-    // The data to send is: name, normalizePhone(form.phone), email, smsOptIn.
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    setServerError('')
+
+    // POST /api/auth/register (server/routes/auth.js). Terms is only checked here, the server doesn't need it.
+    let res
+    let data
+    try {
+      res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone,
+          email: form.email.trim(),
+          smsOptIn: form.smsOptIn,
+        }),
+      })
+      data = await res.json()
+    } catch {
+      setBusy(false)
+      setServerError('Could not reach the server. Is the backend running?')
+      return
+    }
     setBusy(false)
+
+    if (!res.ok) {
+      // 400 = bad fields, 409 = phone already registered. Both send messages per field.
+      if (data.fields) {
+        setErrors({ ...errors, ...data.fields })
+      }
+      setServerError(data.error)
+      return
+    }
+
+    // the server logs new accounts in right away, so save the token like the login page does
+    localStorage.setItem('token', data.token)
     setDone(true)
   }
 
@@ -203,6 +236,8 @@ function RegistrationPage() {
               <p id="reg-terms-msg" className="field-error" role="alert">{errors.terms}</p>
             )}
           </div>
+
+          {serverError && <p className="field-error">{serverError}</p>}
 
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? 'Creating account…' : 'Create account'}

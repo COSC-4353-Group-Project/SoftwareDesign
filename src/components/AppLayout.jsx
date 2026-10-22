@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Bell, ListOrdered, LogOut } from 'lucide-react'
 import RoleSwitch from './RoleSwitch.jsx'
@@ -5,17 +6,45 @@ import './AppLayout.css'
 
 const APP_NAME = 'BribeQueue' // placeholder until prof says ok
 
-// Fake data until login exist
-const MOCK_USER = { name: 'Justin Hendrix' }
+// Fake data until the queue is wired up
 const MOCK_HAS_QUEUE_SPOT = true // if false, my queue doesnt
 
 // Shared frame for every signed-in page: top bar + the current page below it.
 export default function AppLayout() {
   const navigate = useNavigate()
+  // the logged-in user from the server, null if not logged in (or not loaded yet)
+  const [user, setUser] = useState(null)
 
-  // no real login yet, so signing out just goes back to the login page
+  // Ask the server who is logged in, for the name in the top bar and
+  // to decide if the "Staff" switch shows (staff only).
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+        if (res.ok) {
+          setUser(await res.json())
+        }
+      } catch {
+        // server is off: leave user as null, the page still shows
+      }
+    }
+    loadUser()
+  }, [])
+
+  // forget the token so the next visit has to log in again
   function handleSignOut() {
+    localStorage.removeItem('token')
     navigate('/login')
+  }
+
+  // shown until the server answers, or if nobody is logged in
+  let name = 'Guest'
+  let isStaff = false
+  if (user) {
+    name = user.name
+    isStaff = user.role === 'admin'
   }
 
   return (
@@ -39,16 +68,16 @@ export default function AppLayout() {
 
           {/* pushed to the right edge */}
           <div className="top-bar-right">
-            {/* demo switch, "user" side is highlighted because we're in the user layout */}
-            <RoleSwitch current="user" />
+            {/* "user" side is highlighted because we're in the user layout. Staff half only for staff. */}
+            <RoleSwitch current="user" showStaff={isStaff} />
 
             <button type="button" className="icon-btn" title="Notifications">
               <Bell size={16} />
             </button>
 
             <div className="top-bar-user">
-              <span className="avatar">{MOCK_USER.name[0].toUpperCase()}</span>
-              <span className="top-bar-user-name">{MOCK_USER.name}</span>
+              <span className="avatar">{name[0].toUpperCase()}</span>
+              <span className="top-bar-user-name">{name}</span>
             </div>
 
             <button type="button" className="icon-btn" title="Sign out" onClick={handleSignOut}>

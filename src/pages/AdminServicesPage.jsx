@@ -154,7 +154,11 @@ function AdminServicesPage() {
     try {
       res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // saving is staff-only, so send the token from the login page (no token = 401)
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
         body: JSON.stringify(fields),
       })
       data = await res.json()
