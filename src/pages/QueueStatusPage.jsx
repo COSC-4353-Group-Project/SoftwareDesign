@@ -452,6 +452,9 @@ export default function QueueStatusPage() {
       try {
         const response = await fetch(`/api/queues/${entryId}`, {
           signal: controller.signal,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         });
 
         const data = await response.json();
@@ -501,8 +504,11 @@ export default function QueueStatusPage() {
     try {
       const response = await fetch(`/api/queues/${entry.id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
-
+      
       const data = await response.json();
 
       if (!response.ok) {

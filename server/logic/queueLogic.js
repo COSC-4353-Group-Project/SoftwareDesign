@@ -109,12 +109,9 @@ export function getQueueSummary(serviceId) {
   };
 }
 
-
 // cancel queue
 export function leaveQueue(entryId) {
-  const entry = store.queueEntries.find(
-    (item) => item.id === entryId
-  );
+  const entry = store.queueEntries.find((item) => item.id === entryId);
 
   // only active entries can leave
   if (!entry || entry.status !== "waiting") {
@@ -123,4 +120,44 @@ export function leaveQueue(entryId) {
   entry.status = "cancelled";
 
   return getQueueEntry(entryId);
+}
+
+// return all queue entries with current info
+export function getAllQueueEntries() {
+  return store.queueEntries.map((entry) => {
+    const user = store.users.find((user) => user.id === entry.userId);
+
+    return {
+      ...getQueueEntry(entry.id),
+      guestName: user?.name ?? `Guest #${entry.userId}`,
+    };
+  });
+}
+
+// mark entry as served
+export function serveQueueEntry(entryId) {
+  const entry = store.queueEntries.find(
+    (item) => item.id === entryId && item.status === "waiting",
+  );
+
+  if (!entry) {
+    return undefined;
+  }
+
+  entry.status = "served";
+
+  return getQueueEntry(entryId);
+}
+
+// serve earliest waiting party
+export function serveNext() {
+  const nextEntry = store.queueEntries
+    .filter((entry) => entry.status === "waiting")
+    .sort((a, b) => a.id - b.id)[0];
+
+  if (!nextEntry) {
+    return undefined;
+  }
+
+  return serveQueueEntry(nextEntry.id);
 }
