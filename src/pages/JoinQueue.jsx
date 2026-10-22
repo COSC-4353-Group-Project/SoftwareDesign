@@ -1,30 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./JoinQueue.css";
-
-const MOCK_QUEUES = {
-  small: {
-    serviceName: "Dine-in · Party of 1–2",
-    description: "Standard table seating for dates.",
-    partiesAhead: 9,
-    waitMinutes: 60,
-    waitLabel: "~1 hr",
-  },
-  large: {
-    serviceName: "Dine-in · Party of 3–6",
-    description: "Larger tables and booths. Longer Wait-Time.",
-    partiesAhead: 14,
-    waitMinutes: 135,
-    waitLabel: "~2 hr 15 min",
-  },
-  bar: {
-    serviceName: "Bar Seating",
-    description: "First-come bar stools. Bartender Service",
-    partiesAhead: 5,
-    waitMinutes: 24,
-    waitLabel: "~24 min",
-  },
-};
 
 function JoinQueue() {
   const navigate = useNavigate();
@@ -32,14 +8,49 @@ function JoinQueue() {
   const [seating, setSeating] = useState("Dine-in");
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
+  const [queue, setQueue] = useState(null);
+  const [loadingQueue, setLoadingQueue] = useState(true);
+  const [queueError, setQueueError] = useState("");
 
-  // changing the summary based on the number of guests, only changes with Dine-in option
-  const queue =
-    seating === "Bar Seating"
-      ? MOCK_QUEUES.bar
-      : partySize <= 2
-        ? MOCK_QUEUES.small
-        : MOCK_QUEUES.large;
+  // pick service based on user's selection
+  const serviceId = seating === "Bar Seating" ? 3 : partySize <= 2 ? 1 : 2;
+
+  // retrieve queue info when service changes
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function fetchQueueSummary() {
+      setLoadingQueue(true);
+      setQueue(null);
+      setQueueError("");
+
+      try {
+        const response = await fetch(`/api/queues/summary/${serviceId}`, {
+          signal: controller.signal,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to retrieve queue.");
+        }
+
+        setQueue(data);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setQueueError(err.message || "Something went wrong.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingQueue(false);
+        }
+      }
+    }
+
+    fetchQueueSummary();
+
+    return () => controller.abort();
+  }, [serviceId]);
 
   // send user's selection to the backend to join the queue
   async function handleJoin(event) {
@@ -49,9 +60,6 @@ function JoinQueue() {
 
     setJoining(true);
     setError("");
-
-    // pick service based on user's input
-    const serviceId = seating === "Bar Seating" ? 3 : partySize <= 2 ? 1 : 2;
 
     try {
       // submit queue requests
@@ -165,21 +173,37 @@ function JoinQueue() {
         <aside className="join-queue-sidebar">
           {/* display a summary of the queue selection */}
           <section className="join-queue-card" aria-live="polite">
-            <div className="join-queue-summary-heading">
-              <h2>{queue.serviceName}</h2>
-              <span className="join-queue-open">Open</span>
-            </div>
-            <p className="join-queue-description">{queue.description}</p>
-            <dl className="join-queue-stats">
-              <div>
-                <dt>Estimated wait</dt>
-                <dd>{queue.waitLabel}</dd>
-              </div>
-              <div>
-                <dt>Parties ahead</dt>
-                <dd>{queue.partiesAhead}</dd>
-              </div>
-            </dl>
+            {loadingQueue ? (
+              <p className="join-queue-description">
+                Loading queue information...
+              </p>
+            ) : queueError ? (
+              <p className="join-queue-description" role="alert">
+                {queueError}
+              </p>
+            ) : queue ? (
+              <>
+                <div className="join-queue-summary-heading">
+                  <h2>{queue.serviceName}</h2>
+                  <span className="join-queue-open">
+                    {queue.isOpen ? "Open" : "Closed"}
+                  </span>
+                </div>
+
+                <p className="join-queue-description">{queue.description}</p>
+
+                <dl className="join-queue-stats">
+                  <div>
+                    <dt>Estimated wait</dt>
+                    <dd>~{queue.estimatedWaitMinutes} min</dd>
+                  </div>
+                  <div>
+                    <dt>Parties ahead</dt>
+                    <dd>{queue.partiesAhead}</dd>
+                  </div>
+                </dl>
+              </>
+            ) : null}
           </section>
 
           {/* lol */}
@@ -200,7 +224,7 @@ function JoinQueue() {
           <button
             type="submit"
             className="join-queue-confirm"
-            disabled={joining}
+            disabled={joining || loadingQueue || !queue || !queue.isOpen}
           >
             {joining ? "Joining..." : "Confirm & Join Queue"}
           </button>
