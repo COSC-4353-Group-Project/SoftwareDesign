@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom'
 import { Store, UserRound } from 'lucide-react'
 import './RoleSwitch.css'
 
-// Demo only: users should defo NOT be able to do this, but for funsies rn
 // These are plain links , switching views is really just going to another page nothing fancy
-export default function RoleSwitch({ current }) {
+// showStaff: only staff get the "Staff" half. Regular users just see the "User" side.
+export default function RoleSwitch({ current, showStaff }) {
 
   // pick the class for each half: the side we're on gets "active"
   let userClass = 'role-switch-option'
@@ -21,10 +21,12 @@ export default function RoleSwitch({ current }) {
         <UserRound size={14} />
         <span className="role-switch-label">User</span>
       </Link>
-      <Link to="/admin-board" className={staffClass}>
-        <Store size={14} />
-        <span className="role-switch-label">Staff</span>
-      </Link>
+      {showStaff && (
+        <Link to="/admin-board" className={staffClass}>
+          <Store size={14} />
+          <span className="role-switch-label">Staff</span>
+        </Link>
+      )}
     </div>
   )
 }

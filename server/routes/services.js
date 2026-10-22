@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import { createService, getServiceById, listServices, updateService } from '../logic/serviceLogic.js'
+import { requireAdmin } from '../middleware/auth.js'
 import { hasErrors, validateService } from '../validators/serviceValidator.js'
 
 // Routes stay thin: read the request, call a logic function, send JSON back.
-// TODO (Anaya): POST and PUT should be admin-only once middleware/auth.js exists.
+// Anyone can list services. Only staff can create or edit them (requireAdmin).
 const router = Router()
 
 // GET /api/services
@@ -28,7 +29,7 @@ router.get('/:id', (req, res) => {
 })
 
 // POST /api/services   body: { name, description, duration, priority, isOpen }
-router.post('/', (req, res) => {
+router.post('/', requireAdmin, (req, res) => {
   const errors = validateService(req.body, listServices(), null)
   if (hasErrors(errors)) {
     // fields has one message per field, so the page can show each under its input
@@ -41,7 +42,7 @@ router.post('/', (req, res) => {
 })
 
 // PUT /api/services/:id   same body as POST, replaces the service's fields
-router.put('/:id', (req, res) => {
+router.put('/:id', requireAdmin, (req, res) => {
   const id = Number(req.params.id)
   if (!Number.isInteger(id)) {
     return res.status(400).json({ error: 'Service id must be a whole number.' })

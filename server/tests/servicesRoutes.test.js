@@ -2,11 +2,18 @@ import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
 import { resetStore } from '../data/store.js'
+import { loginUser } from '../logic/authLogic.js'
 
 // Route tests: Supertest sends fake HTTP requests to the app, no real server needed.
 // googled and used supertest to walk me through this...pretty much have no clue how it works..yet..
+
+// Creating and editing services is staff-only, so those tests log in as the seeded admin first
+// and send the token in the Authorization header.
+let adminToken
+
 beforeEach(() => {
   resetStore()
+  adminToken = loginUser('Admin', '9035550100').token
 })
 
 describe('GET /api/services', () => {
@@ -46,7 +53,7 @@ const CHEFS_COUNTER = {
 
 describe('POST /api/services', () => {
   test('creates a service and returns it with 201', async () => {
-    const res = await request(app).post('/api/services').send(CHEFS_COUNTER)
+    const res = await request(app).post('/api/services').set('Authorization', `Bearer ${adminToken}`).send(CHEFS_COUNTER)
     expect(res.status).toBe(201)
     expect(res.body.id).toBe(5)
     expect(res.body.name).toBe("Chef's counter")
@@ -57,7 +64,7 @@ describe('POST /api/services', () => {
   })
 
   test('returns 400 with a message per field when input is invalid', async () => {
-    const res = await request(app).post('/api/services').send({ ...CHEFS_COUNTER, name: '', duration: 500 })
+    const res = await request(app).post('/api/services').set('Authorization', `Bearer ${adminToken}`).send({ ...CHEFS_COUNTER, name: '', duration: 500 })
     expect(res.status).toBe(400)
     expect(res.body.fields.name).toBe('Service name is required.')
     expect(res.body.fields.duration).toBe('Expected duration must be between 1 and 240 minutes.')
@@ -65,20 +72,33 @@ describe('POST /api/services', () => {
   })
 
   test('returns 400 when the body is missing', async () => {
-    const res = await request(app).post('/api/services')
+    const res = await request(app).post('/api/services').set('Authorization', `Bearer ${adminToken}`)
     expect(res.status).toBe(400)
   })
 
   test('returns 400 for a duplicate name', async () => {
-    const res = await request(app).post('/api/services').send({ ...CHEFS_COUNTER, name: 'Patio' })
+    const res = await request(app).post('/api/services').set('Authorization', `Bearer ${adminToken}`).send({ ...CHEFS_COUNTER, name: 'Patio' })
     expect(res.status).toBe(400)
     expect(res.body.fields.name).toBe('Another service already has this name.')
   })
 })
 
+describe('only staff can create or edit services', () => {
+  test('401 when not logged in', async () => {
+    const res = await request(app).post('/api/services').send(CHEFS_COUNTER)
+    expect(res.status).toBe(401)
+  })
+
+  test('403 for a regular user', async () => {
+    const userToken = loginUser('Justin Hendrix', '7135550123').token
+    const res = await request(app).put('/api/services/4').set('Authorization', `Bearer ${userToken}`).send(CHEFS_COUNTER)
+    expect(res.status).toBe(403)
+  })
+})
+
 describe('PUT /api/services/:id', () => {
   test('updates a service', async () => {
-    const res = await request(app).put('/api/services/4').send({ ...CHEFS_COUNTER, name: 'Patio' })
+    const res = await request(app).put('/api/services/4').set('Authorization', `Bearer ${adminToken}`).send({ ...CHEFS_COUNTER, name: 'Patio' })
     expect(res.status).toBe(200)
     expect(res.body.duration).toBe(90)
 
@@ -87,18 +107,18 @@ describe('PUT /api/services/:id', () => {
   })
 
   test('returns 400 when the input is invalid', async () => {
-    const res = await request(app).put('/api/services/4').send({ ...CHEFS_COUNTER, priority: 'urgent' })
+    const res = await request(app).put('/api/services/4').set('Authorization', `Bearer ${adminToken}`).send({ ...CHEFS_COUNTER, priority: 'urgent' })
     expect(res.status).toBe(400)
     expect(res.body.fields.priority).toBe('Priority level must be high, medium, or low.')
   })
 
   test('returns 400 when the id is not a number', async () => {
-    const res = await request(app).put('/api/services/abc').send(CHEFS_COUNTER)
+    const res = await request(app).put('/api/services/abc').set('Authorization', `Bearer ${adminToken}`).send(CHEFS_COUNTER)
     expect(res.status).toBe(400)
   })
 
   test('returns 404 when the service does not exist', async () => {
-    const res = await request(app).put('/api/services/999').send(CHEFS_COUNTER)
+    const res = await request(app).put('/api/services/999').set('Authorization', `Bearer ${adminToken}`).send(CHEFS_COUNTER)
     expect(res.status).toBe(404)
   })
 })

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Bell, ListOrdered, LogOut } from 'lucide-react'
 import RoleSwitch from './RoleSwitch.jsx'
@@ -6,17 +7,49 @@ import './AdminLayout.css' // only the admin-only extras (the "Staff" tag)
 
 const APP_NAME = 'BribeQueue' // placeholder until prof says ok
 
-// Fake data until login exist..
-const MOCK_STAFF = { name: 'Justin Hendrix' }
-
 // Shared frame for every staff page: same top bar as AppLayout, but with the admin links.
 // kept as 2 dif layout files so if we fuck up one, it doesnt kill the other murder suicide style
 export default function AdminLayout() {
   const navigate = useNavigate()
+  // the logged-in staff member, null until the server answers
+  const [staff, setStaff] = useState(null)
 
-  // no real login yet, so signing out just goes back to the login page
+  // Every admin page goes through this layout, so this one check guards all of them.
+  // Ask the server who is logged in (GET /api/auth/me with the token from the login page):
+  //   not logged in -> login page, logged in but not staff -> user dashboard.
+  // The real protection is still on the server (requireAdmin), this just keeps users off the pages.
+  useEffect(() => {
+    async function checkStaff() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+        if (!res.ok) {
+          navigate('/login')
+          return
+        }
+        const user = await res.json()
+        if (user.role !== 'admin') {
+          navigate('/dashboard')
+          return
+        }
+        setStaff(user)
+      } catch {
+        navigate('/login') // server is off, nothing to show
+      }
+    }
+    checkStaff()
+  }, [navigate])
+
+  // forget the token so the next visit has to log in again
   function handleSignOut() {
+    localStorage.removeItem('token')
     navigate('/login')
+  }
+
+  // still checking: show nothing instead of flashing the admin page at a non-admin
+  if (!staff) {
+    return null
   }
 
   return (
@@ -39,15 +72,15 @@ export default function AdminLayout() {
           {/* pushed to the right edge */}
           <div className="top-bar-right">
             {/* demo switch, "staff" side is highlighted because admin side*/}
-            <RoleSwitch current="staff" />
+            <RoleSwitch current="staff" showStaff={true} />
 
             <button type="button" className="icon-btn" title="Notifications">
               <Bell size={16} />
             </button>
 
             <div className="top-bar-user">
-              <span className="avatar">{MOCK_STAFF.name[0].toUpperCase()}</span>
-              <span className="top-bar-user-name">{MOCK_STAFF.name}</span>
+              <span className="avatar">{staff.name[0].toUpperCase()}</span>
+              <span className="top-bar-user-name">{staff.name}</span>
               {/* small tag so it's obvious you're looking at the staff side */}
               <span className="staff-tag">Staff</span>
             </div>

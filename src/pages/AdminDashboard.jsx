@@ -1,17 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, ListOrdered, Pencil, Power, Users, Zap } from 'lucide-react'
 import './AdminDashboard.css'
 
-// legit just copied from the admin service page.
-// skipRevenue = dollars paid to skip today, skippersWaiting = paid skippers still in line.
-// These add up to the stat boxes: 28 parties, 79 guests, $69 skip revenue (7 guests paid: 3 + 3 + 1).
-const MOCK_SERVICES = [
-    { id: 1, name: 'Dine-in · Party of 1–2', description: 'Standard table seating for dates.', duration: 6, waiting: 9, guests: 16, skipRevenue: 21, skippersWaiting: 1, isOpen: true },
-    { id: 2, name: 'Dine-in · Party of 3–6', description: 'Larger tables and booths. Longer Wait-Time.', duration: 9, waiting: 14, guests: 56, skipRevenue: 36, skippersWaiting: 2, isOpen: true },
-    { id: 3, name: 'Bar Seating', description: 'First-come bar stools. Bartender Service', duration: 4, waiting: 5, guests: 7, skipRevenue: 12, skippersWaiting: 1, isOpen: true },
-    { id: 4, name: 'Patio', description: 'Outdoor tables. Closed when it rains.', duration: 5, waiting: 0, guests: 0, skipRevenue: 0, skippersWaiting: 0, isOpen: false },
-]
+// JUSTIN BACKEND STOOF: MOCK_SERVICES is gone, the services come from GET /api/services now.
+// The server doesn't send waiting / guests / skipRevenue / skippersWaiting yet, so those show 0
 
 // Turns minutes into human(XD) text: 0 to "Now", 45 to "45 min", 135 to "2 hr 15 min".
 // Same helper as QueueStatusPage, copied so i dont have to write more code.
@@ -25,16 +18,47 @@ function formatMinutes(min) {
 
 function AdminDashboard(){
     // services live in state so the Open/Close button can change them
-    const [services, setServices] = useState(MOCK_SERVICES)
+    const [services, setServices] = useState([])
+
+    // JUSTIN BACKEND STOOF: load the services from the server once, when the page opens
+    useEffect(() => {
+        async function loadServices() {
+            const res = await fetch('/api/services')
+            if (res.ok) {
+                setServices(await res.json())
+            }
+        }
+        loadServices()
+    }, [])
 
     /* ===== Funny little button work ===== */
-    // Open/Close button: flips isOpen on the one service that was clicked, leaves the rest alone
-    function toggleOpen(id) {
-        setServices(services.map((service) =>
-            service.id === id ? { ...service, isOpen: !service.isOpen } : service
-        ))
+    // JUSTIN BACKEND STOOF: Open/Close saves to the server (PUT /api/services/:id, staff only),
+    // so guests actually see the service open or close. The server sends back the saved service.
+    async function toggleOpen(service) {
+        const res = await fetch(`/api/services/${service.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({
+                name: service.name,
+                description: service.description,
+                duration: service.duration,
+                priority: service.priority,
+                isOpen: !service.isOpen,
+            }),
+        })
+        if (res.ok) {
+            const saved = await res.json()
+            // swap in the saved version, leave the rest alone
+            setServices(services.map((s) => (s.id === saved.id ? saved : s)))
+        }
     }
     /* ===== end Funny little button work ===== */
+
+    // JUSTIN BACKEND STOOF: "Open Services" box worked out from the real list
+    const openCount = services.filter((service) => service.isOpen).length
 
     return(
     <div className="admin-page">
@@ -59,7 +83,8 @@ function AdminDashboard(){
                 </div>
                 <div className="admin-stats-box">
                     <p className="admin-stats-text">Open Services</p>
-                    <h2>3 of 4</h2>
+                    {/* JUSTIN BACKEND STOOF: real count. The other 3 boxes are still typed in, waiting on Anaya's endpoint */}
+                    <h2>{openCount} of {services.length}</h2>
                     <p className="admin-stats-text">Accepting new guests</p>
                 </div>
                 <div className="admin-stats-box">
@@ -96,14 +121,15 @@ function AdminDashboard(){
                             <p className="admin-service-desc">{service.description}</p>
 
                             <div className="admin-service-stats">
+                                {/* JUSTIN BACKEND STOOF: ?? 0 because the server doesn't send these counts yet */}
                                 <span className="admin-service-stat">
-                                    <Users size={14} /> {service.waiting} {service.waiting === 1 ? 'party' : 'parties'} waiting ({service.guests} guests)
+                                    <Users size={14} /> {service.waiting ?? 0} {service.waiting === 1 ? 'party' : 'parties'} waiting ({service.guests ?? 0} guests)
                                 </span>
                                 {/* a new guest joins behind everyone, so their wait is (waiting + 1) × minutes per party */}
                                 <span className="admin-service-stat">
                                     <Clock size={14} />
                                     {service.isOpen
-                                        ? ` ~${formatMinutes((service.waiting + 1) * service.duration)} for new guests`
+                                        ? ` ~${formatMinutes(((service.waiting ?? 0) + 1) * service.duration)} for new guests`
                                         : ' Not taking new guests'}
                                 </span>
                             </div>
@@ -124,7 +150,7 @@ function AdminDashboard(){
                             <button
                                 type="button"
                                 className={service.isOpen ? 'admin-service-button outline' : 'admin-service-button primary'}
-                                onClick={() => toggleOpen(service.id)}
+                                onClick={() => toggleOpen(service)}
                             >
                                 <Power size={14} /> {service.isOpen ? 'Close' : 'Open'}
                             </button>

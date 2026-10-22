@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import './LoginPage.css'
 
 const NAME_MAX = 60
-const EMAIL_MAX = 254
 const PHONE_MAX = 20
 
 //  Validation helpers 
@@ -29,18 +28,9 @@ function validatePhone(value) {
   if (!value.trim()) return 'Phone number is required buddy.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
-//same goes for the return, that was rough. 
-function validateEmail(value) {
-  const email = value.trim()
-  if (!email) return '' // optional
-  if (email.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Enter a valid email address.'
-}
-
 const validators = {
   name: (form) => validateName(form.name),
   phone: (form) => validatePhone(form.phone),
-  email: (form) => validateEmail(form.email),
 }
 
 function isValid(errors) {
@@ -71,13 +61,14 @@ function TextField({ id, label, required, error, ...inputProps }) {
 function LoginPage() {
     const [form, setForm] = useState({
         name: '',
-        phone: '',
-        email: ''
+        phone: ''
     })
 
     const [errors, setErrors] = useState({})
     const [busy, setBusy] = useState(false)
     const [done, setDone] = useState(false)
+    // message from the server, like "No account matches that name and phone number."
+    const [serverError, setServerError] = useState('')
     const navigate = useNavigate()
 
     // Updating the full name/phone fields
@@ -99,11 +90,43 @@ function LoginPage() {
     if (!isValid(nextErrors)) return
 
     setBusy(true)
-    // this will be replaced when the backend is built. 
-    // The data to send is: name, normalizePhone(form.phone), email.
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    setServerError('')
+
+    // POST /api/auth/login (server/routes/auth.js). The server checks the name matches the phone.
+    let res
+    let data
+    try {
+      res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: form.name.trim(), phone: form.phone }),
+      })
+      data = await res.json()
+    } catch {
+      setBusy(false)
+      setServerError('Could not reach the server. Is the backend running?')
+      return
+    }
     setBusy(false)
-    navigate('/dashboard')
+
+    if (!res.ok) {
+      // 400 comes with a message per field, 401 is "no account matches"
+      if (data.fields) {
+        setErrors(data.fields)
+      }
+      setServerError(data.error)
+      return
+    }
+
+    // Remember who is logged in. Other pages send this token back as "Authorization: Bearer <token>".
+    localStorage.setItem('token', data.token)
+
+    // staff go to the admin side, everyone else to the user dashboard
+    if (data.user.role === 'admin') {
+      navigate('/admin-board')
+    } else {
+      navigate('/dashboard')
+    }
   }
 
     return (
@@ -141,13 +164,20 @@ function LoginPage() {
                     onBlur={handleBlur('phone')}
                     />
 
+                    {serverError && <p className="field-error">{serverError}</p>}
+
                     <button type="submit" className="login-btn-primary" disabled={busy}>
                         {busy ? "Signing In..." : "Sign In"}
                     </button>
 
-                    <button className="goog-btn-primary">
+                    {/* type="button" so clicking it doesn't submit the sign-in form */}
+                    <button type="button" className="goog-btn-primary">
                         {"Continue with Google"}
                     </button>
+
+                    <p className="login-footer">
+                        New user? <Link to="/register">Create an account</Link>
+                    </p>
 
 
                 </form>

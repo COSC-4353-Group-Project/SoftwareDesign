@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import './RegistrationPage.css'
 
 const NAME_MAX = 60
-const EMAIL_MAX = 254
 const PHONE_MAX = 20
 
 //  Validation helpers 
@@ -29,14 +28,6 @@ function validatePhone(value) {
   if (!value.trim()) return 'Phone number is required buddy.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
-//same goes for the return, that was rough. 
-function validateEmail(value) {
-  const email = value.trim()
-  if (!email) return '' // optional
-  if (email.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Enter a valid email address.'
-}
-
 function validateTerms(checked) {
   return checked ? '' : 'You must accept the terms without reading to continue.'
 }
@@ -44,7 +35,6 @@ function validateTerms(checked) {
 const validators = {
   name: (form) => validateName(form.name),
   phone: (form) => validatePhone(form.phone),
-  email: (form) => validateEmail(form.email),
   terms: (form) => validateTerms(form.terms),
 }
 
@@ -84,13 +74,14 @@ function RegistrationPage() {
   const [form, setForm] = useState({
     name: '',
     phone: '',
-    email: '',
     smsOptIn: true,
     terms: false,
   })
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  // message from the server, like "An account with this phone number already exists."
+  const [serverError, setServerError] = useState('')
 
   // Update a field; if it's already showing an error, re-check it live so the error clears as they fix it.
   const handleChange = (key) => (e) => {
@@ -112,10 +103,40 @@ function RegistrationPage() {
     if (!isValid(nextErrors)) return
 
     setBusy(true)
-    // this will be replaced when the backend is built. 
-    // The data to send is: name, normalizePhone(form.phone), email, smsOptIn.
-    await new Promise((resolve) => setTimeout(resolve, 800))
+    setServerError('')
+
+    // POST /api/auth/register (server/routes/auth.js). Terms is only checked here, the server doesn't need it.
+    let res
+    let data
+    try {
+      res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          phone: form.phone,
+          smsOptIn: form.smsOptIn,
+        }),
+      })
+      data = await res.json()
+    } catch {
+      setBusy(false)
+      setServerError('Could not reach the server. Is the backend running?')
+      return
+    }
     setBusy(false)
+
+    if (!res.ok) {
+      // 400 = bad fields, 409 = phone already registered. Both send messages per field.
+      if (data.fields) {
+        setErrors({ ...errors, ...data.fields })
+      }
+      setServerError(data.error)
+      return
+    }
+
+    // the server logs new accounts in right away, so save the token like the login page does
+    localStorage.setItem('token', data.token)
     setDone(true)
   }
 
@@ -169,19 +190,6 @@ function RegistrationPage() {
             onChange={handleChange('phone')}
             onBlur={handleBlur('phone')}
           />
-          <TextField
-            id="reg-email"
-            label="Email"
-            hint="Optional, for receipts when you bribe skip the line."
-            error={errors.email}
-            type="email"
-            autoComplete="email"
-            maxLength={EMAIL_MAX}
-            placeholder="you@example.com"
-            value={form.email}
-            onChange={handleChange('email')}  
-            onBlur={handleBlur('email')}
-          />
 
           <label className="checkbox-row">
             <input type="checkbox" checked={form.smsOptIn} onChange={handleChange('smsOptIn')} />
@@ -203,6 +211,8 @@ function RegistrationPage() {
               <p id="reg-terms-msg" className="field-error" role="alert">{errors.terms}</p>
             )}
           </div>
+
+          {serverError && <p className="field-error">{serverError}</p>}
 
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? 'Creating account…' : 'Create account'}
