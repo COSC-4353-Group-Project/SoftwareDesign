@@ -9,7 +9,7 @@ beforeEach(() => {
   resetStore()
 })
 
-const JORDAN = { name: 'Jordan Lee', phone: '(713) 555-0199', email: '', smsOptIn: true }
+const JORDAN = { name: 'Jordan Lee', phone: '(713) 555-0199', smsOptIn: true }
 
 describe('POST /api/auth/register', () => {
   test('creates the account and returns a token', async () => {
@@ -22,7 +22,7 @@ describe('POST /api/auth/register', () => {
   test('400 with a message per field for bad input', async () => {
     const res = await request(app).post('/api/auth/register').send({ ...JORDAN, name: '' })
     expect(res.status).toBe(400)
-    expect(res.body.fields.name).toBe('Name is required.')
+    expect(res.body.fields.name).toBe('Name is required come on.')
   })
 
   test('409 when the phone is already registered', async () => {

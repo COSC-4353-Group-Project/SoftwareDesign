@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import './RegistrationPage.css'
 
 const NAME_MAX = 60
-const EMAIL_MAX = 254
 const PHONE_MAX = 20
 
 //  Validation helpers 
@@ -29,14 +28,6 @@ function validatePhone(value) {
   if (!value.trim()) return 'Phone number is required buddy.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
-//same goes for the return, that was rough. 
-function validateEmail(value) {
-  const email = value.trim()
-  if (!email) return '' // optional
-  if (email.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Enter a valid email address.'
-}
-
 function validateTerms(checked) {
   return checked ? '' : 'You must accept the terms without reading to continue.'
 }
@@ -44,7 +35,6 @@ function validateTerms(checked) {
 const validators = {
   name: (form) => validateName(form.name),
   phone: (form) => validatePhone(form.phone),
-  email: (form) => validateEmail(form.email),
   terms: (form) => validateTerms(form.terms),
 }
 
@@ -84,7 +74,6 @@ function RegistrationPage() {
   const [form, setForm] = useState({
     name: '',
     phone: '',
-    email: '',
     smsOptIn: true,
     terms: false,
   })
@@ -126,7 +115,6 @@ function RegistrationPage() {
         body: JSON.stringify({
           name: form.name.trim(),
           phone: form.phone,
-          email: form.email.trim(),
           smsOptIn: form.smsOptIn,
         }),
       })
@@ -201,19 +189,6 @@ function RegistrationPage() {
             value={form.phone}
             onChange={handleChange('phone')}
             onBlur={handleBlur('phone')}
-          />
-          <TextField
-            id="reg-email"
-            label="Email"
-            hint="Optional, for receipts when you bribe skip the line."
-            error={errors.email}
-            type="email"
-            autoComplete="email"
-            maxLength={EMAIL_MAX}
-            placeholder="you@example.com"
-            value={form.email}
-            onChange={handleChange('email')}  
-            onBlur={handleBlur('email')}
           />
 
           <label className="checkbox-row">

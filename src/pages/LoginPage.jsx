@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import './LoginPage.css'
 
 const NAME_MAX = 60
-const EMAIL_MAX = 254
 const PHONE_MAX = 20
 
 //  Validation helpers 
@@ -29,18 +28,9 @@ function validatePhone(value) {
   if (!value.trim()) return 'Phone number is required buddy.'
   return normalizePhone(value) ? '' : 'Enter a valid 10-digit US phone number.'
 }
-//same goes for the return, that was rough. 
-function validateEmail(value) {
-  const email = value.trim()
-  if (!email) return '' // optional
-  if (email.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer.`
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Enter a valid email address.'
-}
-
 const validators = {
   name: (form) => validateName(form.name),
   phone: (form) => validatePhone(form.phone),
-  email: (form) => validateEmail(form.email),
 }
 
 function isValid(errors) {
@@ -71,8 +61,7 @@ function TextField({ id, label, required, error, ...inputProps }) {
 function LoginPage() {
     const [form, setForm] = useState({
         name: '',
-        phone: '',
-        email: ''
+        phone: ''
     })
 
     const [errors, setErrors] = useState({})

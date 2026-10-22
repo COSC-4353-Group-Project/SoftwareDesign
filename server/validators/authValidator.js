@@ -2,7 +2,6 @@
 // plus type checks, since the API can be sent anything, not just our forms.
 
 export const NAME_MAX = 60
-export const EMAIL_MAX = 254
 
 // Turns any US phone format into 10 digits: "(713) 555-0123" and "1-713-555-0123"
 // both become "7135550123". Returns null if it isn't a valid US number. had to copy paste this one ngl
@@ -49,24 +48,6 @@ function checkPhone(phone) {
   }
   if (normalizePhone(phone) === null) {
     return 'Enter a valid 10-digit US phone number.'
-  }
-  return ''
-}
-
-// Email is optional: missing or empty is fine
-function checkEmail(email) {
-  if (email === undefined || email === null || email === '') {
-    return ''
-  }
-  if (typeof email !== 'string') {
-    return 'Email must be text.'
-  }
-  const trimmed = email.trim()
-  if (trimmed.length > EMAIL_MAX) {
-    return `Email must be ${EMAIL_MAX} characters or fewer.`
-  }
-  if (trimmed !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmed)) {
-    return 'Enter a valid email address.'
   }
   return ''
 }

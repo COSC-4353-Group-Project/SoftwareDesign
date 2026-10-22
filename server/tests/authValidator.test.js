@@ -3,7 +3,7 @@ import { hasErrors, normalizePhone, validateLogin, validateRegister } from '../v
 
 // Unit tests for register/login validation. '' means the field is fine.
 
-const VALID = { name: 'Jordan Lee', phone: '(713) 555-0199', email: 'jordan@example.com', smsOptIn: true }
+const VALID = { name: 'Jordan Lee', phone: '(713) 555-0199', smsOptIn: true }
 
 describe('normalizePhone', () => {
   test('turns common formats into 10 digits', () => {
@@ -22,27 +22,21 @@ describe('validateRegister', () => {
     expect(hasErrors(validateRegister(VALID))).toBe(false)
   })
 
-  test('email is optional', () => {
-    expect(validateRegister({ ...VALID, email: '' }).email).toBe('')
-  })
-
   test('name and phone are required', () => {
     const errors = validateRegister({})
-    expect(errors.name).toBe('Name is required.')
+    expect(errors.name).toBe('Name is required come on.')
     expect(errors.phone).toBe('Phone number is required.')
   })
 
   test('name must be letters and at most 60 characters', () => {
-    expect(validateRegister({ ...VALID, name: 'R2D2' }).name).toBe('Name can only contain letters.')
-    expect(validateRegister({ ...VALID, name: 'a'.repeat(61) }).name).toBe('Name must be 60 characters or fewer.')
+    expect(validateRegister({ ...VALID, name: 'R2D2' }).name).toBe('Name can only contain letters, dont be special..')
+    expect(validateRegister({ ...VALID, name: 'a'.repeat(61) }).name).toBe(
+      'Name must be 60 characters or fewer, why such a long name.',
+    )
   })
 
   test('phone must be a real US number', () => {
     expect(validateRegister({ ...VALID, phone: '12345' }).phone).toBe('Enter a valid 10-digit US phone number.')
-  })
-
-  test('email must look like an email', () => {
-    expect(validateRegister({ ...VALID, email: 'not-an-email' }).email).toBe('Enter a valid email address.')
   })
 
   test('checks field types', () => {
