@@ -108,3 +108,19 @@ export function getQueueSummary(serviceId) {
     estimatedWaitMinutes: estimateWaitForService(serviceId, partiesAhead + 1),
   };
 }
+
+
+// cancel queue
+export function leaveQueue(entryId) {
+  const entry = store.queueEntries.find(
+    (item) => item.id === entryId
+  );
+
+  // only active entries can leave
+  if (!entry || entry.status !== "waiting") {
+    return undefined;
+  }
+  entry.status = "cancelled";
+
+  return getQueueEntry(entryId);
+}

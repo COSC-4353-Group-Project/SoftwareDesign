@@ -3,6 +3,7 @@ import {
   joinQueue,
   getQueueEntry,
   getQueueSummary,
+  leaveQueue,
 } from "../logic/queueLogic.js";
 import { validateJoinQueue } from "../validators/queueValidator.js";
 import { store } from "../data/store.js";
@@ -87,6 +88,46 @@ router.get("/:entryId", (req, res) => {
   }
 
   res.json(entry);
+});
+
+
+// DELETE /api/queues/:entryId
+router.delete("/:entryId", (req, res) => {
+  const entryId = Number(req.params.entryId);
+
+  // check entry ID
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return res.status(400).json({
+      error: "Entry ID must be a positive whole number.",
+    });
+  }
+
+  // check if entry exists
+  const entry = getQueueEntry(entryId);
+  if (!entry) {
+    return res.status(404).json({
+      error: "Queue entry not found.",
+    });
+  }
+
+  // only cancel a waiting queue
+  if (entry.status !== "waiting") {
+    return res.status(409).json({
+      error: "This queue entry is no longer active.",
+    });
+  }
+
+  const userId = 1;
+
+  if (entry.userId !== userId) {
+    return res.status(403).json({
+      error: "You cannot leave another user's queue.",
+    });
+  }
+  
+  const cancelledEntry = leaveQueue(entryId);
+
+  res.json(cancelledEntry);
 });
 
 export default router;

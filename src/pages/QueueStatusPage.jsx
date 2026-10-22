@@ -409,7 +409,11 @@ function CancelButton({ label, onConfirm }) {
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            await onConfirm();
+            try {
+              await onConfirm();
+            } finally {
+              setBusy(false);
+            }
           }}
         >
           Yes, {label.toLowerCase()}
@@ -481,8 +485,35 @@ export default function QueueStatusPage() {
   }
 
   // no backend yet, so "leaving" just sends them to the dashboard YET, waiting on this
+  // async function handleLeave() {
+  //   navigate("/dashboard");
+  // }
+
+  // Thu: cancel user's queue entry
   async function handleLeave() {
-    navigate("/dashboard");
+    if (!entry.id) {
+      setStatusError("No active queue entry was found.");
+      return;
+    }
+
+    setStatusError("");
+
+    try {
+      const response = await fetch(`/api/queues/${entry.id}`, {
+        method: "DELETE",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to leave queue.");
+      }
+
+      // leave status page after cancellation
+      navigate("/dashboard");
+    } catch (err) {
+      setStatusError(err.message || "Something went wrong.");
+    }
   }
 
   return (
