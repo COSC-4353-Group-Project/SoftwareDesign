@@ -4,14 +4,19 @@ import {
   getQueueEntry,
   getQueueSummary,
   leaveQueue,
+  getAllQueueEntries,
+  serveQueueEntry,
+  serveNext,
 } from "../logic/queueLogic.js";
 import { validateJoinQueue } from "../validators/queueValidator.js";
 import { store } from "../data/store.js";
+import { requireLogin, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
 
 // POST /api/queues/join
-router.post("/join", (req, res) => {
+// using existing auth
+router.post("/join", requireLogin, (req, res) => {
   // validate request body
   const errors = validateJoinQueue(req.body);
 
@@ -22,8 +27,8 @@ router.post("/join", (req, res) => {
     });
   }
 
-  // temp user ID
-  const userId = 1;
+  // identify the logged-in user
+  const userId = req.user.id;
 
   // check whether user is already in an active queue
   const alreadyWaiting = store.queueEntries.some(
@@ -70,7 +75,7 @@ router.get("/summary/:serviceId", (req, res) => {
 });
 
 // GET /api/queues/:entryId
-router.get("/:entryId", (req, res) => {
+router.get("/:entryId", requireLogin, (req, res) => {
   const entryId = Number(req.params.entryId);
 
   if (!Number.isSafeInteger(entryId) || entryId < 1) {
@@ -86,13 +91,17 @@ router.get("/:entryId", (req, res) => {
       error: "Queue entry not found.",
     });
   }
+  if (entry.userId !== req.user.id && req.user.role !== "admin") {
+    return res.status(403).json({
+      error: "Authentication failed. Cannot view queue entry.",
+    });
+  }
 
   res.json(entry);
 });
 
-
 // DELETE /api/queues/:entryId
-router.delete("/:entryId", (req, res) => {
+router.delete("/:entryId", requireLogin, (req, res) => {
   const entryId = Number(req.params.entryId);
 
   // check entry ID
@@ -117,17 +126,90 @@ router.delete("/:entryId", (req, res) => {
     });
   }
 
-  const userId = 1;
+  const userId = req.user.id;
 
   if (entry.userId !== userId) {
     return res.status(403).json({
       error: "You cannot leave another user's queue.",
     });
   }
-  
+
   const cancelledEntry = leaveQueue(entryId);
 
   res.json(cancelledEntry);
+});
+
+// GET /api/queues/admin/all
+router.get("/admin/all", requireAdmin, (req, res) => {
+  res.json(getAllQueueEntries());
+});
+
+// PATCH /api/queues/admin/:entryId/serve
+router.patch("/admin/:entryId/serve", requireAdmin, (req, res) => {
+  const entryId = Number(req.params.entryId);
+
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return res.status(400).json({
+      error: "Invalid queue entry ID.",
+    });
+  }
+
+  const entry = getQueueEntry(entryId);
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "Queue entry not found.",
+    });
+  }
+
+  if (entry.status !== "waiting") {
+    return res.status(409).json({
+      error: "This queue entry is no longer waiting.",
+    });
+  }
+
+  res.json(serveQueueEntry(entryId));
+});
+
+// reusing some logic from customer pov
+// POST /api/queues/admin/serve-next
+router.post("/admin/serve-next", requireAdmin, (req, res) => {
+  const entry = serveNext();
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "No waiting parties found.",
+    });
+  }
+
+  res.json(entry);
+});
+
+// DELETE /api/queues/admin/:entryId
+router.delete("/admin/:entryId", requireAdmin, (req, res) => {
+  const entryId = Number(req.params.entryId);
+
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return res.status(400).json({
+      error: "Invalid queue entry ID.",
+    });
+  }
+
+  const entry = getQueueEntry(entryId);
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "Queue entry not found.",
+    });
+  }
+
+  if (entry.status !== "waiting") {
+    return res.status(409).json({
+      error: "This queue entry is no longer waiting.",
+    });
+  }
+
+  res.json(leaveQueue(entryId));
 });
 
 export default router;
