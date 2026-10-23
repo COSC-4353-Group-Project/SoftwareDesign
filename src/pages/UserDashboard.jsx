@@ -33,7 +33,7 @@ function UserDashboard() {
     fetchNotifications();
   }, []);
 
-  // Anaya: an attempt at backend thingss i guess???
+  // Anaya: an attempt at backend thingss i guess??? (connects the live wait time cards to the info stored in store.js in the backend)
 
   const [userDashItems, setuserDashItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +50,28 @@ function UserDashboard() {
       })
   }, [])
 
+  // Anaya: should deal with showing the actual user name that logs in
+
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (!response.ok) throw new Error("Unable to load user.");
+        setUser(await response.json());
+      } catch(err) {
+        console.error("Failed to fetch user.")
+      }
+    }
+
+    fetchUser()
+  })
+
   // const dineIn = userDashItems.find((item) => item.id === 1) Anaya: was for testing if front and back end connected
 
   return (
@@ -59,7 +81,7 @@ function UserDashboard() {
           <div className="dashboard-box-hello dashboard-hi">
             {" "}
             {/** greets the user w address */}
-            <h1>Hi, user!</h1>{" "}
+            <h1>Hi, {user ? user.name : "there"}!</h1>{" "}
             {/**this'll have to be replaced with the actual person's name */}
           </div>
           <div className="dashboard-box-hello dashboard-address">
