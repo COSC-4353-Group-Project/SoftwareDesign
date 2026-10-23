@@ -5,26 +5,26 @@ export const STATUSES = ['Entered', 'Canceled', 'Done']
 export const NAME_MAX = 100
 
 export function validateHistory(body) {
-    const errors = {serviceName: '', date: '', bribe: '', status: ''}
+    const errors = {service: '', date: '', bribe: '', status: ''}
 
     if(typeof body != 'object' || body === null){
         body = {}
     }
 
     //Service name same as service validator's service name
-    if(body.serviceName === undefined || body.serviceName === null){
-        errors.serviceName = 'Service name is required.'
+    if(body.service === undefined || body.service === null){
+        errors.service = 'Service name is required.'
     }
-    else if(typeof body.serviceName !== 'string'){
-        errors.serviceName = 'Service name must be text.'
+    else if(typeof body.service !== 'string'){
+        errors.service = 'Service name must be text.'
     }
     else{
-        const serviceName = body.serviceName.trim()
-        if(serviceName === ''){
-            errors.serviceName = 'Service name is required.'
+        const service = body.service.trim()
+        if(service === ''){
+            errors.service = 'Service name is required.'
         }
-        else if(serviceName.length > NAME_MAX){
-            errors.serviceName = 'Service name must be ${NAME_MAX} characters or fewer.'
+        else if(service.length > NAME_MAX){
+            errors.service = `Service name must be ${NAME_MAX} characters or fewer.`
         }
     }
 
