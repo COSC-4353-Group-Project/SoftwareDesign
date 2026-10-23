@@ -31,7 +31,7 @@ function UserDashboard() {
       <section>
         <h4 className="dashboard-section-title">Get a table</h4>
 
-        {/* Thu: Removed Reservation, Join Waitlist is the only button.
+        {/* THU: Removed Reservation, Join Waitlist is the only button.
             The whole card is a Link, so clicking anywhere on it goes to the join page
             (and Enter works on it automatically, since Links are keyboard-friendly by default) */}
         <Link to="/join-queues" className="dashboard-entry">

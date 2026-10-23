@@ -46,7 +46,7 @@ function formatQueueEntry(entry) {
     }),
     wait: `${entry.estimatedWaitMinutes}m`,
     status: entry.status === "served" ? "done" : entry.status,
-    paid: 0,
+    paid: (entry.skips ?? []).reduce((total, skip) => total + skip.price, 0),
     passedBy: 0,
     position: entry.position,
   };
@@ -230,36 +230,34 @@ function AdminQueuesPage() {
 
   // moving queue up and down
   // this only works when it's the same seating preference, doesn't really make sense to bump if one is asking for patio and the other for table inside
-  function moveParty(id, direction) {
-    setData((current) => {
-      const party = current.parties.find((entry) => entry.id === id);
-      if (!party || party.status !== "waiting") return current;
+  async function moveParty(id, direction) {
+    if (busy) return;
 
-      const activeIds = current.order[party.queue].filter((entryId) =>
-        current.parties.some(
-          (entry) => entry.id === entryId && entry.status === "waiting",
-        ),
-      );
+    setBusy(true);
+    setError("");
 
-      const from = activeIds.indexOf(id);
-      const to = from + direction;
+    try {
+      const response = await fetch(`/api/queues/admin/${id}/move`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ direction }),
+      });
 
-      if (from < 0 || to < 0 || to >= activeIds.length) return current;
+      const result = await response.json();
 
-      const updatedOrder = [...current.order[party.queue]];
-      const firstIndex = updatedOrder.indexOf(id);
-      const secondIndex = updatedOrder.indexOf(activeIds[to]);
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to reorder queue.");
+      }
 
-      [updatedOrder[firstIndex], updatedOrder[secondIndex]] = [
-        updatedOrder[secondIndex],
-        updatedOrder[firstIndex],
-      ];
-
-      return {
-        ...current,
-        order: { ...current.order, [party.queue]: updatedOrder },
-      };
-    });
+      await fetchQueues();
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   // popup confirmation when you try to cancel a queue
@@ -328,6 +326,9 @@ function AdminQueuesPage() {
   }
 
   function createRow(party, completed = false) {
+    const index = activeOrders[party.queue].indexOf(party.id);
+    const queueLength = activeOrders[party.queue].length;
+
     return (
       <tr
         key={party.id}
@@ -393,7 +394,7 @@ function AdminQueuesPage() {
                 type="button"
                 className="admin-queues-arrow"
                 aria-label={`Move ${party.name} up`}
-                disabled={true}
+                disabled={busy || index <= 0}
                 onClick={() => moveParty(party.id, -1)}
               >
                 ↑
@@ -402,7 +403,7 @@ function AdminQueuesPage() {
                 type="button"
                 className="admin-queues-arrow"
                 aria-label={`Move ${party.name} down`}
-                disabled={true}
+                disabled={busy || index >= queueLength - 1}
                 onClick={() => moveParty(party.id, 1)}
               >
                 ↓
