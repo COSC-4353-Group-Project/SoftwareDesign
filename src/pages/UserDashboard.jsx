@@ -1,17 +1,38 @@
 import "./UserDashboard.css";
 import { Clock, ListPlus, Users } from "lucide-react"; // icons for the join card + live wait time cards
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 // layout shenanigans
 
-// Fake notifications until the backend exists, newest first.
-const MOCK_NOTIFICATIONS = [
-  { id: 3, title: "You're #3 in line", body: "Head back to the host stand soon.", time: "7:18 PM" },
-  { id: 2, title: "Moved up to #5", body: "Skip 3 spots · $9", time: "7:02 PM" },
-  { id: 1, title: "You joined the waitlist", body: "Dine-in · Party of 1–2 · you're #8", time: "6:51 PM" },
-];
-
 function UserDashboard() {
+  // THU: for sending notifs and error checking
+  const [notifications, setNotifications] = useState([]);
+  const [notificationError, setNotificationError] = useState("");
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const response = await fetch("/api/notifications", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Unable to load notifications.");
+        }
+
+        const data = await response.json();
+        setNotifications(data);
+      } catch (err) {
+        setNotificationError(err.message);
+      }
+    }
+
+    fetchNotifications();
+  }, []);
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
@@ -40,7 +61,9 @@ function UserDashboard() {
           </span>
           <span>
             <span className="dashboard-entry-title">Join Waitlist</span>
-            <span className="dashboard-entry-desc">Here now? Get in line and we'll notify you.</span>
+            <span className="dashboard-entry-desc">
+              Here now? Get in line and we'll notify you.
+            </span>
           </span>
         </Link>
       </section>
@@ -113,15 +136,25 @@ function UserDashboard() {
           {/* title lives inside the box now, top of the box lines up with "Live wait times" */}
           <div className="dashboard-notifs">
             <h4 className="dashboard-notifs-title">Recent notifications</h4>
-            {MOCK_NOTIFICATIONS.length === 0 ? (
-              <p className="dashboard-notifs-empty">Nothing yet. Updates about your spot show up here.</p>
+            {/* THU: replacing mock  */}
+            {notificationError ? (
+              <p className="dashboard-notifs-empty">{notificationError}</p>
+            ) : notifications.length === 0 ? (
+              <p className="dashboard-notifs-empty">
+                Nothing yet. Updates about your spot show up here.
+              </p>
             ) : (
               <ul className="dashboard-notifs-list">
-                {/* only the 4 newest, same as the test site */}
-                {MOCK_NOTIFICATIONS.slice(0, 4).map((notif) => (
+                {notifications.slice(0, 4).map((notif) => (
                   <li key={notif.id}>
                     <p className="dashboard-notif-name">{notif.title}</p>
-                    <p className="dashboard-notif-detail">{notif.body} · {notif.time}</p>
+                    <p className="dashboard-notif-detail">
+                      {notif.body} ·{" "}
+                      {new Date(notif.createdAt).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </li>
                 ))}
               </ul>

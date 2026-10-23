@@ -1,6 +1,7 @@
 import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
+import { notifyQueueJoined, notifyAlmostReady } from "./notificationLogic.js";
 
 const PRICE_PER_SPOT = 3;
 const FRONT_OF_LINE_PRICE = 20;
@@ -41,7 +42,12 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
   // store the entry and return the entry with information needed by QueueStatusPage
   store.queueEntries.push(entry);
 
-  return getQueueEntry(entry.id);
+  const joinedEntry = getQueueEntry(entry.id);
+
+  notifyQueueJoined(joinedEntry, service.name);
+  updateQueueNotifications(serviceId);
+
+  return joinedEntry;
 }
 
 // list all waiting entries for a service in order
@@ -60,6 +66,11 @@ function updateQueueOrder(orderedEntries) {
   orderedEntries.forEach((entry, index) => {
     entry.queueOrder = index + 1;
   });
+}
+
+// for notifying front of queue
+function updateQueueNotifications(serviceId) {
+  notifyAlmostReady(listQueue(serviceId));
 }
 
 // enable moviing a waiting party up or down
@@ -87,6 +98,7 @@ export function moveQueueEntry(entryId, direction) {
   ];
 
   updateQueueOrder(queue);
+  updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
 }
@@ -141,7 +153,7 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
 
   updateQueueOrder(queue);
 
-  // record keeping purchase 
+  // record keeping purchase
   entry.skips ??= [];
 
   entry.skips.push({
@@ -151,6 +163,8 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
     price,
     at: new Date().toISOString(),
   });
+
+  updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
 }
@@ -219,6 +233,7 @@ export function leaveQueue(entryId) {
     return undefined;
   }
   entry.status = "cancelled";
+  updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
 }
@@ -246,6 +261,7 @@ export function serveQueueEntry(entryId) {
   }
 
   entry.status = "served";
+  updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
 }
