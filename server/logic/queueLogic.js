@@ -2,16 +2,21 @@ import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
 
+const PRICE_PER_SPOT = 3;
+const FRONT_OF_LINE_PRICE = 20;
+
 // adding a guest to a queue
 export function joinQueue(userId, serviceId, partySize, seatingPreference) {
   const service = getServiceById(serviceId);
 
   // number of waiting parties for a service
-  const partiesAhead = store.queueEntries.filter(
-    (entry) => entry.serviceId === serviceId && entry.status === "waiting",
-  ).length;
-
+  const partiesAhead = listQueue(serviceId).length;
   const position = partiesAhead + 1;
+  const queueOrder =
+    Math.max(
+      0,
+      ...listQueue(serviceId).map((entry) => entry.queueOrder ?? entry.id),
+    ) + 1;
 
   // create unique entry ID (and make sure it's in order)
   const nextId =
@@ -26,6 +31,7 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
     seatingPreference,
     status: "waiting",
     initialPosition: position,
+    queueOrder,
     joinedAt: new Date().toISOString(),
     type: "walk-in",
     notes: "",
@@ -35,14 +41,7 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
   // store the entry and return the entry with information needed by QueueStatusPage
   store.queueEntries.push(entry);
 
-  return {
-    ...entry,
-    serviceName: service.name,
-    position,
-    partiesAhead,
-    estimatedWaitMinutes: estimateWaitForService(serviceId, position),
-    minutesPerParty: service.duration,
-  };
+  return getQueueEntry(entry.id);
 }
 
 // list all waiting entries for a service in order
@@ -51,7 +50,109 @@ export function listQueue(serviceId) {
     .filter(
       (entry) => entry.serviceId === serviceId && entry.status === "waiting",
     )
-    .sort((a, b) => a.id - b.id);
+    .sort(
+      (a, b) => (a.queueOrder ?? a.id) - (b.queueOrder ?? b.id) || a.id - b.id,
+    );
+}
+
+// save updated order within a queue
+function updateQueueOrder(orderedEntries) {
+  orderedEntries.forEach((entry, index) => {
+    entry.queueOrder = index + 1;
+  });
+}
+
+// enable moviing a waiting party up or down
+export function moveQueueEntry(entryId, direction) {
+  const entry = store.queueEntries.find(
+    (item) => item.id === entryId && item.status === "waiting",
+  );
+
+  if (!entry || ![-1, 1].includes(direction)) {
+    return undefined;
+  }
+
+  const queue = listQueue(entry.serviceId);
+  const currentIndex = queue.findIndex((item) => item.id === entryId);
+  const newIndex = currentIndex + direction;
+
+  // no wrapping
+  if (currentIndex < 0 || newIndex < 0 || newIndex >= queue.length) {
+    return undefined;
+  }
+
+  [queue[currentIndex], queue[newIndex]] = [
+    queue[newIndex],
+    queue[currentIndex],
+  ];
+
+  updateQueueOrder(queue);
+
+  return getQueueEntry(entryId);
+}
+
+// paying bribe to move up in queue
+export function purchaseQueueAdvance(entryId, mode, spots) {
+  const entry = store.queueEntries.find(
+    (item) => item.id === entryId && item.status === "waiting",
+  );
+
+  if (!entry) {
+    return undefined;
+  }
+
+  const queue = listQueue(entry.serviceId);
+  const currentIndex = queue.findIndex((item) => item.id === entryId);
+
+  // already first in line
+  if (currentIndex <= 0) {
+    return undefined;
+  }
+
+  const from = currentIndex + 1;
+  let to;
+  let price;
+  let label;
+
+  if (mode === "front") {
+    to = 1;
+    price = FRONT_OF_LINE_PRICE;
+    label = "Front of line";
+  } else if (mode === "spots") {
+    const maxSpots = Math.min(
+      from - 2,
+      Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1,
+    );
+
+    if (!Number.isInteger(spots) || spots < 1 || spots > maxSpots) {
+      return undefined;
+    }
+
+    to = from - spots;
+    price = spots * PRICE_PER_SPOT;
+    label = `Skip ${spots} spot${spots === 1 ? "" : "s"}`;
+  } else {
+    return undefined;
+  }
+
+  // move entry to its purchased position
+  const [movedEntry] = queue.splice(currentIndex, 1);
+  queue.splice(to - 1, 0, movedEntry);
+
+  updateQueueOrder(queue);
+
+  // record keeping purchase 
+  entry.skips ??= [];
+
+  entry.skips.push({
+    label,
+    from,
+    to,
+    price,
+    at: new Date().toISOString(),
+  });
+
+  return getQueueEntry(entryId);
 }
 
 // return current position of a queue entry
@@ -151,8 +252,18 @@ export function serveQueueEntry(entryId) {
 
 // serve earliest waiting party
 export function serveNext() {
-  const nextEntry = store.queueEntries
-    .filter((entry) => entry.status === "waiting")
+  const serviceIds = [
+    ...new Set(
+      store.queueEntries
+        .filter((entry) => entry.status === "waiting")
+        .map((entry) => entry.serviceId),
+    ),
+  ];
+
+  // only first party
+  const nextEntry = serviceIds
+    .map((serviceId) => listQueue(serviceId)[0])
+    .filter(Boolean)
     .sort((a, b) => a.id - b.id)[0];
 
   if (!nextEntry) {

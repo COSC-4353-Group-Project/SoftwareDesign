@@ -7,6 +7,8 @@ import {
   getAllQueueEntries,
   serveQueueEntry,
   serveNext,
+  moveQueueEntry,
+  purchaseQueueAdvance,
 } from "../logic/queueLogic.js";
 import { validateJoinQueue } from "../validators/queueValidator.js";
 import { store } from "../data/store.js";
@@ -210,6 +212,100 @@ router.delete("/admin/:entryId", requireAdmin, (req, res) => {
   }
 
   res.json(leaveQueue(entryId));
+});
+
+// PATCH /api/queues/admin/:entryId/move
+router.patch("/admin/:entryId/move", requireAdmin, (req, res) => {
+  const entryId = Number(req.params.entryId);
+  const { direction } = req.body ?? {};
+
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return res.status(400).json({
+      error: "Invalid queue entry ID.",
+    });
+  }
+
+  if (direction !== -1 && direction !== 1) {
+    return res.status(400).json({
+      error: "Cannot move queue.",
+    });
+  }
+
+  const entry = getQueueEntry(entryId);
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "Queue entry not found.",
+    });
+  }
+
+  if (entry.status !== "waiting") {
+    return res.status(409).json({
+      error: "This queue entry is no longer waiting.",
+    });
+  }
+
+  const updated = moveQueueEntry(entryId, direction);
+
+  if (!updated) {
+    return res.status(409).json({
+      error: "Cannot move queue.",
+    });
+  }
+
+  res.json(updated);
+});
+
+// POST /api/queues/:entryId/advance
+router.post("/:entryId/advance", requireLogin, (req, res) => {
+  const entryId = Number(req.params.entryId);
+
+  if (!Number.isSafeInteger(entryId) || entryId < 1) {
+    return res.status(400).json({
+      error: "Invalid queue entry ID.",
+    });
+  }
+
+  const entry = getQueueEntry(entryId);
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "Queue entry not found.",
+    });
+  }
+
+  if (entry.userId !== req.user.id) {
+    return res.status(403).json({
+      error: "You cannot move another user's queue entry.",
+    });
+  }
+
+  if (entry.status !== "waiting") {
+    return res.status(409).json({
+      error: "This queue entry is no longer waiting.",
+    });
+  }
+
+  const { mode, spots } = req.body ?? {};
+
+  if (
+    !["front", "spots"].includes(mode) ||
+    (mode === "spots" && (!Number.isInteger(spots) || spots < 1))
+  ) {
+    return res.status(400).json({
+      error: "Invalid advancement selection.",
+    });
+  }
+
+  const updated = purchaseQueueAdvance(entryId, mode, spots);
+
+  if (!updated) {
+    return res.status(409).json({
+      error: "Unable to move to the requested position.",
+    });
+  }
+
+  res.json(updated);
 });
 
 export default router;

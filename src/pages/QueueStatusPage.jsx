@@ -223,6 +223,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState(""); // '', 'spots', or 'front'
   const [spots, setSpots] = useState(1);
+  const [purchasing, setPurchasing] = useState(false);
 
   // already at the front, nothing to skip
   if (position <= 1) {
@@ -255,11 +256,22 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
       price: FRONT_OF_LINE_PRICE,
     };
   }
+  // THU:
+  async function handlePurchase() {
+    if (!skip || purchasing) return;
 
-  function handlePurchase() {
-    onPurchase(skip);
-    setChoice("");
-    setOpen(false);
+    setPurchasing(true);
+
+    try {
+      const success = await onPurchase(skip);
+
+      if (success) {
+        setChoice("");
+        setOpen(false);
+      }
+    } finally {
+      setPurchasing(false);
+    }
   }
 
   return (
@@ -367,7 +379,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
           <button
             type="button"
             className="skip-pay"
-            disabled={!skip}
+            disabled={!skip || purchasing}
             onClick={handlePurchase}
           >
             {skip
@@ -438,7 +450,7 @@ export default function QueueStatusPage() {
   const [entry, setEntry] = useState(() => location.state?.entry ?? MOCK_ENTRY);
   const navigate = useNavigate();
 
-  // Thu:
+  // THU:
   const [statusError, setStatusError] = useState("");
   const entryId = location.state?.entry?.id;
 
@@ -478,13 +490,51 @@ export default function QueueStatusPage() {
   }, [entryId]);
 
   // no backend yet, so just update the local copy new position add to the skips list
-  function handleSkip(skip) {
-    const purchase = { ...skip, at: new Date().toISOString() };
-    setEntry({
-      ...entry,
-      position: skip.to,
-      skips: [...entry.skips, purchase],
-    });
+  // function handleSkip(skip) {
+  //   const purchase = { ...skip, at: new Date().toISOString() };
+  //   setEntry({
+  //     ...entry,
+  //     position: skip.to,
+  //     skips: [...entry.skips, purchase],
+  //   });
+  // }
+
+  // THU: request paid advancement from backend
+  async function handleSkip(skip) {
+    if (!entry.id || !skip) {
+      setStatusError("No active queue entry found.");
+      return false;
+    }
+
+    setStatusError("");
+
+    const mode = skip.to === 1 ? "front" : "spots";
+
+    try {
+      const response = await fetch(`/api/queues/${entry.id}/advance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          mode,
+          ...(mode === "spots" ? { spots: skip.from - skip.to } : {}),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to advance queue.");
+      }
+
+      setEntry(result);
+      return true;
+    } catch (err) {
+      setStatusError(err.message || "Something went wrong.");
+      return false;
+    }
   }
 
   // no backend yet, so "leaving" just sends them to the dashboard YET, waiting on this
@@ -492,7 +542,7 @@ export default function QueueStatusPage() {
   //   navigate("/dashboard");
   // }
 
-  // Thu: cancel user's queue entry
+  // THU: cancel user's queue entry
   async function handleLeave() {
     if (!entry.id) {
       setStatusError("No active queue entry was found.");
@@ -508,7 +558,7 @@ export default function QueueStatusPage() {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -524,7 +574,7 @@ export default function QueueStatusPage() {
 
   return (
     <div className="queue-page">
-      {/* Thu: just in case if request fails */}
+      {/* THU: just in case if request fails */}
       {statusError && <p role="alert">{statusError}</p>}
       {/* header: title & service name on the left, status badge on the right */}
       <div className="queue-header">
