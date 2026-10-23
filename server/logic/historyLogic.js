@@ -13,7 +13,6 @@ export function getHistoryById(id) {
 
 function historyFields(body) {
   return {
-    id: body.id,
     service: body.service.trim(),
     date: body.date,
     bribe: body.bribe,
@@ -45,7 +44,6 @@ export function updateHistory(id, body) {
   }
 
   const fields = historyFields(body)
-  history.id = fields.id
   history.service = fields.service
   history.date = fields.date
   history.bribe = fields.bribe

@@ -1,10 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom"; // useLocation to read queue info from JoinQueue
 import { Check, ChevronDown, Clock, Crown, Users, Zap } from "lucide-react";
 import "./QueueStatusPage.css";
 
-// JUSTIN BACKEND STOOF: MOCK_ENTRY is gone. The page asks GET /api/queues/me for the
-// logged-in user's spot, and shows "not in a queue" if they don't have one.
+// Fake data until the backend exists.
+const MOCK_ENTRY = {
+  serviceName: "Dinner seating",
+  partySize: 4,
+  position: 3,
+  initialPosition: 8,
+  minutesPerParty: 6,
+  type: "walk-in", // or 'reservation'
+  joinedAt: "2026-09-28T18:05:00",
+  notes: "High chair please",
+  // paid skips; empty = the orange box stays hidden
+  skips: [
+    // { label: 'Skip 2 spots', from: 5, to: 3, price: 6, at: '2026-09-28T18:12:00' },
+  ],
+};
 
 const ALMOST_READY_AT = 3; // positions 1-3 count as "almost ready"
 
@@ -210,6 +223,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState(""); // '', 'spots', or 'front'
   const [spots, setSpots] = useState(1);
+  const [purchasing, setPurchasing] = useState(false);
 
   // already at the front, nothing to skip
   if (position <= 1) {
@@ -242,11 +256,22 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
       price: FRONT_OF_LINE_PRICE,
     };
   }
+  // THU:
+  async function handlePurchase() {
+    if (!skip || purchasing) return;
 
-  function handlePurchase() {
-    onPurchase(skip);
-    setChoice("");
-    setOpen(false);
+    setPurchasing(true);
+
+    try {
+      const success = await onPurchase(skip);
+
+      if (success) {
+        setChoice("");
+        setOpen(false);
+      }
+    } finally {
+      setPurchasing(false);
+    }
   }
 
   return (
@@ -354,7 +379,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
           <button
             type="button"
             className="skip-pay"
-            disabled={!skip}
+            disabled={!skip || purchasing}
             onClick={handlePurchase}
           >
             {skip
@@ -396,7 +421,11 @@ function CancelButton({ label, onConfirm }) {
           disabled={busy}
           onClick={async () => {
             setBusy(true);
-            await onConfirm();
+            try {
+              await onConfirm();
+            } finally {
+              setBusy(false);
+            }
           }}
         >
           Yes, {label.toLowerCase()}
@@ -417,26 +446,23 @@ function CancelButton({ label, onConfirm }) {
 
 export default function QueueStatusPage() {
   // state instead of const so buying a skip can change the position on screen
-  // JUSTIN BACKEND STOOF: start with what Join Queue passed in (if anything), null = no spot yet
   const location = useLocation();
-  const [entry, setEntry] = useState(location.state?.entry ?? null);
-  // true until the server answers, so we don't flash "not in a queue" while loading
-  const [loading, setLoading] = useState(true);
+  const [entry, setEntry] = useState(() => location.state?.entry ?? MOCK_ENTRY);
   const navigate = useNavigate();
 
-<<<<<<< Updated upstream
-=======
   // THU:
   const [statusError, setStatusError] = useState("");
+  const entryId = location.state?.entry?.id;
 
-  // JUSTIN BACKEND STOOF: always ask the server for MY current spot (GET /api/queues/me),
-  // so the page works from the "My Queue" tab too, not only right after joining
+  // retrieve user's current queue info from backend
   useEffect(() => {
+    if (!entryId) return;
+
     const controller = new AbortController();
 
     async function fetchQueueStatus() {
       try {
-        const response = await fetch("/api/queues/me", {
+        const response = await fetch(`/api/queues/${entryId}`, {
           signal: controller.signal,
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -445,69 +471,111 @@ export default function QueueStatusPage() {
 
         const data = await response.json();
 
-        if (response.status === 404) {
-          // not in any queue: show the empty message below
-          setEntry(null);
-        } else if (!response.ok) {
+        if (!response.ok) {
           throw new Error(data.error || "Unable to retrieve queue status.");
-        } else {
-          setEntry(data);
-          setStatusError("");
         }
+
+        setEntry(data);
+        setStatusError("");
       } catch (err) {
         if (err.name !== "AbortError") {
           setStatusError(err.message || "Something went wrong.");
         }
       }
-      setLoading(false);
     }
 
     fetchQueueStatus();
 
     return () => controller.abort();
-  }, []);
+  }, [entryId]);
 
->>>>>>> Stashed changes
   // no backend yet, so just update the local copy new position add to the skips list
-  function handleSkip(skip) {
-    const purchase = { ...skip, at: new Date().toISOString() };
-    setEntry({
-      ...entry,
-      position: skip.to,
-      skips: [...entry.skips, purchase],
-    });
+  // function handleSkip(skip) {
+  //   const purchase = { ...skip, at: new Date().toISOString() };
+  //   setEntry({
+  //     ...entry,
+  //     position: skip.to,
+  //     skips: [...entry.skips, purchase],
+  //   });
+  // }
+
+  // THU: request paid advancement from backend
+  async function handleSkip(skip) {
+    if (!entry.id || !skip) {
+      setStatusError("No active queue entry found.");
+      return false;
+    }
+
+    setStatusError("");
+
+    const mode = skip.to === 1 ? "front" : "spots";
+
+    try {
+      const response = await fetch(`/api/queues/${entry.id}/advance`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          mode,
+          ...(mode === "spots" ? { spots: skip.from - skip.to } : {}),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to advance queue.");
+      }
+
+      setEntry(result);
+      return true;
+    } catch (err) {
+      setStatusError(err.message || "Something went wrong.");
+      return false;
+    }
   }
 
   // no backend yet, so "leaving" just sends them to the dashboard YET, waiting on this
+  // async function handleLeave() {
+  //   navigate("/dashboard");
+  // }
+
+  // THU: cancel user's queue entry
   async function handleLeave() {
-    navigate("/dashboard");
-  }
+    if (!entry.id) {
+      setStatusError("No active queue entry was found.");
+      return;
+    }
 
-  // JUSTIN BACKEND STOOF: still waiting on the server
-  if (loading && !entry) {
-    return (
-      <div className="queue-page">
-        <p className="queue-subtitle">Loading your spot…</p>
-      </div>
-    );
-  }
+    setStatusError("");
 
-  // JUSTIN BACKEND STOOF: logged in but not in any line (or not logged in at all)
-  if (!entry) {
-    return (
-      <div className="queue-page">
-        {statusError && <p role="alert">{statusError}</p>}
-        <h1 className="queue-title">Queue status</h1>
-        <p className="queue-subtitle">You're not in a queue right now.</p>
-        <p className="back-link">
-          <Link to="/join-queues">Join the waitlist</Link> · <Link to="/dashboard">Back to dashboard</Link>
-        </p>
-      </div>
-    );
+    try {
+      const response = await fetch(`/api/queues/${entry.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to leave queue.");
+      }
+
+      // leave status page after cancellation
+      navigate("/dashboard");
+    } catch (err) {
+      setStatusError(err.message || "Something went wrong.");
+    }
   }
 
   return (
     <div className="queue-page">
+      {/* THU: just in case if request fails */}
+      {statusError && <p role="alert">{statusError}</p>}
       {/* header: title & service name on the left, status badge on the right */}
       <div className="queue-header">
         <div>

@@ -76,21 +76,6 @@ router.get("/summary/:serviceId", (req, res) => {
   res.json(summary);
 });
 
-// JUSTIN BACKEND STOOF: GET /api/queues/me   the logged-in user's current spot in line (Queue Status page).
-// Has to stay ABOVE "/:entryId", otherwise Express would treat "me" as an entry id.
-router.get("/me", requireLogin, (req, res) => {
-  const mine = store.queueEntries.find(
-    (entry) => entry.userId === req.user.id && entry.status === "waiting",
-  );
-
-  if (!mine) {
-    return res.status(404).json({ error: "You're not in a queue right now." });
-  }
-
-  // same info the page gets from GET /api/queues/:entryId (position, wait, service name)
-  res.json(getQueueEntry(mine.id));
-});
-
 // GET /api/queues/:entryId
 router.get("/:entryId", requireLogin, (req, res) => {
   const entryId = Number(req.params.entryId);

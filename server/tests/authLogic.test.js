@@ -11,7 +11,7 @@ beforeEach(() => {
 
 describe('registerUser', () => {
   test('creates a regular user with a cleaned-up phone number', () => {
-    const { user } = registerUser({ name: ' Jordan Lee ', phone: '(713) 555-0199', email: '' })
+    const { user } = registerUser({ name: ' Jordan Lee ', phone: '(713) 555-0199' })
     expect(user.id).toBe(3)
     expect(user.name).toBe('Jordan Lee')
     expect(user.phone).toBe('7135550199')

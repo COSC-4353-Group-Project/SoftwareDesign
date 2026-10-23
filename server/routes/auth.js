@@ -5,7 +5,7 @@ import { hasErrors, validateLogin, validateRegister } from '../validators/authVa
 
 const router = Router()
 
-// POST /api/auth/register   body: { name, phone, email, smsOptIn }
+// POST /api/auth/register   body: { name, phone, smsOptIn }
 // Creates a regular user and logs them in. Returns { token, user }.
 router.post('/register', (req, res) => {
   const errors = validateRegister(req.body)

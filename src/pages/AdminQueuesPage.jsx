@@ -1,8 +1,7 @@
 import "./AdminQueuesPage.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Zap } from "lucide-react"; // icons for the pill tags
 
-// just a bunch of mock data
 const QUEUES = [
   { id: "small", label: "Dine-in · Party of 1–2" },
   { id: "large", label: "Dine-in ·  Party of 3–6" },
@@ -10,88 +9,142 @@ const QUEUES = [
   { id: "patio", label: "Patio" },
 ];
 
+// mapping backend service IDs to frontend queue IDs
+const SERVICE_QUEUES = {
+  1: "small",
+  2: "large",
+  3: "bar",
+  4: "patio",
+};
+
 const STATUS_LABELS = {
   waiting: "Waiting",
   done: "Done",
   cancelled: "Cancelled",
 };
 
-const MOCK_DATA = {
-  parties: [
-    {
-      id: "1",
-      name: "Justin",
-      size: 2,
-      queue: "small",
-      joined: "2:15 PM",
-      wait: "10m",
-      status: "waiting",
-      paid: 0,
-      passedBy: 1, // how many paid skippers moved ahead of this guest
-    },
-    {
-      id: "2",
-      name: "Anaya",
-      size: 2,
-      queue: "small",
-      joined: "2:21 PM",
-      wait: "300m",
-      status: "waiting",
-      paid: 15,
-      passedBy: 67,
-    },
-    {
-      id: "3",
-      name: "Vincent",
-      size: 1,
-      queue: "large",
-      joined: "2:28 PM",
-      wait: "3m",
-      status: "waiting",
-      paid: 0,
-      passedBy: 0,
-    },
-    {
-      id: "4",
-      name: "Thu",
-      size: 4,
-      queue: "bar",
-      joined: "2:08 PM",
-      wait: "3m",
-      status: "waiting",
-      paid: 0,
-      passedBy: 0,
-    },
-  ],
+const EMPTY_DATA = {
+  parties: [],
   order: {
-    small: ["2", "1"],
-    large: ["3"],
-    bar: ["4"],
+    small: [],
+    large: [],
+    bar: [],
     patio: [],
   },
 };
 
-const SUMMARIES = [
-  { label: "Dine-in", value: 3, hint: "parties waiting" },
-  { label: "Bar Seating", value: 1, hint: "parties waiting" },
-  { label: "Patio", value: 0, hint: "parties waiting" },
-  {
-    label: "Average time waiting",
-    value: "21m",
-    hint: "since active parties joined",
-  },
-];
+// convert backend queue entry to same format as AdminQueuesPage
+function formatQueueEntry(entry) {
+  return {
+    id: String(entry.id),
+    name: entry.guestName,
+    size: entry.partySize,
+    queue: SERVICE_QUEUES[entry.serviceId],
+    joined: new Date(entry.joinedAt).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+    wait: `${entry.estimatedWaitMinutes}m`,
+    status: entry.status === "served" ? "done" : entry.status,
+    paid: (entry.skips ?? []).reduce((total, skip) => total + skip.price, 0),
+    passedBy: 0,
+    position: entry.position,
+  };
+}
 
 function AdminQueuesPage() {
-  const [data, setData] = useState(MOCK_DATA);
+  const [data, setData] = useState(EMPTY_DATA);
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState("2");
+  const [selectedId, setSelectedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // Calculate summary cards from the actual backend queue.
+  const waitingParties = data.parties.filter(
+    (party) => party.status === "waiting",
+  );
+
+  const countQueue = (...queueIds) =>
+    waitingParties.filter((party) => queueIds.includes(party.queue)).length;
+
+  const averageWait = waitingParties.length
+    ? Math.round(
+        waitingParties.reduce(
+          (total, party) => total + parseInt(party.wait, 10),
+          0,
+        ) / waitingParties.length,
+      )
+    : 0;
+
+  const SUMMARIES = [
+    {
+      label: "Dine-in",
+      value: countQueue("small", "large"),
+      hint: "parties waiting",
+    },
+    {
+      label: "Bar Seating",
+      value: countQueue("bar"),
+      hint: "parties waiting",
+    },
+    {
+      label: "Patio",
+      value: countQueue("patio"),
+      hint: "parties waiting",
+    },
+    {
+      label: "Average estimated wait",
+      value: `${averageWait}m`,
+      hint: "across active parties",
+    },
+  ];
+
+  // get current queue entries from the backend
+  async function fetchQueues() {
+    const response = await fetch("/api/queues/admin/all", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Unable to retrieve queues.");
+    }
+
+    const parties = result
+      .filter((entry) => SERVICE_QUEUES[entry.serviceId])
+      .map(formatQueueEntry);
+
+    // make frontend order
+    const order = Object.fromEntries(
+      QUEUES.map((queue) => [
+        queue.id,
+        parties
+          .filter(
+            (party) => party.queue === queue.id && party.status === "waiting",
+          )
+          .sort((a, b) => a.position - b.position)
+          .map((party) => party.id),
+      ]),
+    );
+
+    setData({ parties, order });
+  }
+
+  useEffect(() => {
+    fetchQueues()
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Queue filters work now, pretty much all states
   // "all" means that filter is off
   const [queueFilter, setQueueFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  // End queue filters 
+  // End queue filters
 
   // guest information and waiting parties in a queue
   const byId = Object.fromEntries(
@@ -120,11 +173,11 @@ function AdminQueuesPage() {
       .toLowerCase()
       .includes(search.trim().toLowerCase());
 
-    //  Queue filters 
+    //  Queue filters
     const queueMatches = queueFilter === "all" || party.queue === queueFilter;
     const statusMatches =
       statusFilter === "all" || party.status === statusFilter;
-    //  End queue filters 
+    //  End queue filters
 
     return nameMatches && queueMatches && statusMatches;
   }
@@ -140,77 +193,141 @@ function AdminQueuesPage() {
       QUEUES.findIndex((queue) => queue.id === a.queue) -
         QUEUES.findIndex((queue) => queue.id === b.queue),
   );
-  
+
   const completedRows = data.parties.filter(
     (party) => party.status !== "waiting" && matches(party),
   );
   const selected = byId[selectedId];
-  const serveTarget = activeRows[0];
 
   // puts the already marked done queue to the bottom of the table
-  function changeStatus(id, status) {
-    setData((current) => ({
-      ...current,
-      parties: current.parties.map((party) =>
-        party.id === id ? { ...party, status } : party,
-      ),
-    }));
+  async function changeStatus(id) {
+    if (busy) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/queues/admin/${id}/serve`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to serve party.");
+      }
+
+      await fetchQueues();
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   // moving queue up and down
-  // this only works when it's the same seating preference, doesn't really make sense to bump if one is asking for patio and the other for table inside 
-  function moveParty(id, direction) {
-    setData((current) => {
-      const party = current.parties.find((entry) => entry.id === id);
-      if (!party || party.status !== "waiting") return current;
+  // this only works when it's the same seating preference, doesn't really make sense to bump if one is asking for patio and the other for table inside
+  async function moveParty(id, direction) {
+    if (busy) return;
 
-      const activeIds = current.order[party.queue].filter((entryId) =>
-        current.parties.some(
-          (entry) => entry.id === entryId && entry.status === "waiting",
-        ),
-      );
+    setBusy(true);
+    setError("");
 
-      const from = activeIds.indexOf(id);
-      const to = from + direction;
+    try {
+      const response = await fetch(`/api/queues/admin/${id}/move`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ direction }),
+      });
 
-      if (from < 0 || to < 0 || to >= activeIds.length) return current;
+      const result = await response.json();
 
-      const updatedOrder = [...current.order[party.queue]];
-      const firstIndex = updatedOrder.indexOf(id);
-      const secondIndex = updatedOrder.indexOf(activeIds[to]);
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to reorder queue.");
+      }
 
-      [updatedOrder[firstIndex], updatedOrder[secondIndex]] = [
-        updatedOrder[secondIndex],
-        updatedOrder[firstIndex],
-      ];
-
-      return {
-        ...current,
-        order: { ...current.order, [party.queue]: updatedOrder },
-      };
-    });
+      await fetchQueues();
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   // popup confirmation when you try to cancel a queue
-  function cancelParty(party) {
-    if (
-      window.confirm(
-        `Cancel this entry?\n${party.name} will be removed from the active queue. This can't be undone.`,
-      )
-    ) {
-      changeStatus(party.id, "cancelled");
+  async function cancelParty(party) {
+    if (busy) return;
+
+    const confirmed = window.confirm(
+      `Cancel this entry?\n${party.name} will be removed from the active queue. This can't be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/queues/admin/${party.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to cancel party.");
+      }
+
+      await fetchQueues();
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
     }
   }
 
   // serving next, targets top row
-  function serveNext() {
-    if (!serveTarget) return;
-    changeStatus(serveTarget.id, "done");
-    setSelectedId(serveTarget.id);
+  async function serveNext() {
+    if (busy) return;
+
+    setBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/queues/admin/serve-next", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to serve next party.");
+      }
+
+      setSelectedId(String(result.id));
+      await fetchQueues();
+    } catch (err) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function createRow(party, completed = false) {
     const index = activeOrders[party.queue].indexOf(party.id);
+    const queueLength = activeOrders[party.queue].length;
 
     return (
       <tr
@@ -277,7 +394,7 @@ function AdminQueuesPage() {
                 type="button"
                 className="admin-queues-arrow"
                 aria-label={`Move ${party.name} up`}
-                disabled={index <= 0}
+                disabled={busy || index <= 0}
                 onClick={() => moveParty(party.id, -1)}
               >
                 ↑
@@ -286,7 +403,7 @@ function AdminQueuesPage() {
                 type="button"
                 className="admin-queues-arrow"
                 aria-label={`Move ${party.name} down`}
-                disabled={index >= activeOrders[party.queue].length - 1}
+                disabled={busy || index >= queueLength - 1}
                 onClick={() => moveParty(party.id, 1)}
               >
                 ↓
@@ -308,6 +425,8 @@ function AdminQueuesPage() {
   return (
     <div className="admin-queues-page">
       {/* page title, search, and queue/status filters */}
+      {loading && <p role="status">Loading queues...</p>}
+      {error && <p role="alert">{error}</p>}
       <div className="admin-queues-header">
         <div>
           <p className="admin-queues-brand">BribeSmart</p>
@@ -378,7 +497,10 @@ function AdminQueuesPage() {
             <button
               type="button"
               className="admin-queues-primary"
-              disabled={!serveTarget}
+              disabled={
+                busy ||
+                !data.parties.some((party) => party.status === "waiting")
+              }
               onClick={serveNext}
             >
               Serve next
@@ -488,7 +610,8 @@ function AdminQueuesPage() {
                   <button
                     type="button"
                     className="admin-queues-primary"
-                    onClick={() => changeStatus(selected.id, "done")}
+                    onClick={() => changeStatus(selected.id)}
+                    disabled={busy}
                   >
                     Mark Done
                   </button>
