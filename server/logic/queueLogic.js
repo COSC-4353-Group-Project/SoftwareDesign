@@ -2,9 +2,49 @@ import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
 import { notifyQueueJoined, notifyAlmostReady } from "./notificationLogic.js";
+import { createHistory, updateHistory } from "./historyLogic.js";
 
 const PRICE_PER_SPOT = 3;
 const FRONT_OF_LINE_PRICE = 20;
+
+// create a record when customer joins queue
+function recordQueueHistory(entry, serviceName) {
+  const history = createHistory({
+    service: serviceName,
+    date: entry.joinedAt.slice(0, 10),
+    bribe: 0,
+    status: "Entered",
+  });
+
+  history.userId = entry.userId;
+  history.queueEntryId = entry.id;
+}
+
+// ppdate record after a queue change
+function updateQueueHistory(entry) {
+  const history = store.history.find((item) => item.queueEntryId === entry.id);
+
+  if (!history) return;
+
+  const status =
+    entry.status === "cancelled"
+      ? "Canceled"
+      : entry.status === "served"
+        ? "Done"
+        : "Entered";
+
+  const bribe = (entry.skips ?? []).reduce(
+    (total, skip) => total + skip.price,
+    0,
+  );
+
+  updateHistory(history.id, {
+    service: history.service,
+    date: history.date,
+    bribe,
+    status,
+  });
+}
 
 // adding a guest to a queue
 export function joinQueue(userId, serviceId, partySize, seatingPreference) {
@@ -44,6 +84,7 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
 
   const joinedEntry = getQueueEntry(entry.id);
 
+  recordQueueHistory(joinedEntry, service.name);
   notifyQueueJoined(joinedEntry, service.name);
   updateQueueNotifications(serviceId);
 
@@ -164,6 +205,7 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
     at: new Date().toISOString(),
   });
 
+  updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
@@ -233,6 +275,7 @@ export function leaveQueue(entryId) {
     return undefined;
   }
   entry.status = "cancelled";
+  updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
@@ -261,6 +304,7 @@ export function serveQueueEntry(entryId) {
   }
 
   entry.status = "served";
+  updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
   return getQueueEntry(entryId);
