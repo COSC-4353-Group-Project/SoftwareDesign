@@ -3,6 +3,7 @@ import authRouter from './routes/auth.js'
 import servicesRouter from './routes/services.js'
 import queuesRouter from './routes/queues.js'
 import historyRouter from './routes/history.js'
+import notificationsRouter from './routes/notifications.js'
 
 // Builds the Express app but does not start it. index.js starts it;
 // the tests import it directly so Supertest can send it fake requests.
@@ -22,6 +23,7 @@ app.use('/api/services', servicesRouter)
 app.use('/api/queues', queuesRouter)
 //I honestly have no idea what I'm doing, kinda just copying whatcha got here Justin
 app.use('/api/history', historyRouter)
+app.use('/api/notifications', notificationsRouter)
 
 // Any /api path that didn't match a route above if they forgot to add it. 
 app.use((req, res) => {
