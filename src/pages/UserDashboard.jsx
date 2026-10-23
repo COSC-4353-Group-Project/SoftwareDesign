@@ -33,6 +33,25 @@ function UserDashboard() {
     fetchNotifications();
   }, []);
 
+  // Anaya: an attempt at backend thingss i guess???
+
+  const [userDashItems, setuserDashItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    fetch('/api/userDash')
+      .then((res) => res.json())
+      .then((data => {
+        setuserDashItems(data)
+        setLoading(false)
+      }))
+      .catch((err) => {
+        console.error('Failed to fetch user items:', err)
+        setLoading(false)
+      })
+  }, [])
+
+  // const dineIn = userDashItems.find((item) => item.id === 1) Anaya: was for testing if front and back end connected
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-header">
@@ -75,60 +94,38 @@ function UserDashboard() {
           </div>
           <div className="dashboard-general-box dashboard-waittimes">
             {/** grid of wait time cards**/}
+            {/* Anaya: where i have to start the map for new cards, start with the loading */}
             <div className="wait-grid">
-              <div className="wait-card">
-                <div className="wait-card-top">
-                  <p className="wait-card-name">Dine-in · Party of 1–2</p>
-                  <span className="wait-badge-open">Open</span>
+              {loading ? (
+                <p>Loading wait times...</p>
+              ) : userDashItems.length === 0 ? (
+                <p>No wait times to show.</p>
+              ) : (
+                userDashItems.map((item) =>
+                <div className="wait-card" key = {item.id}>
+                    <div className="wait-card-top"> 
+                      <p className="wait-card-name">{item.name}</p>
+                      {item.isOpen ? (
+                        <span className="wait-badge-open">Open</span>
+                      ) : (
+                        <span className="wait-badge-closed">Closed</span>
+                      )}
+                  </div>
+                  <p className="wait-card-desc">
+                    {item.description}
+                  </p>
+                 <div className="wait-card-stats">
+                   <span className="wait-stat">
+                     <Users size={14} /> {item.inLine}
+                   </span>
+                   <span className="wait-stat">
+                     <Clock size={14} /> {item.duration}
+                   </span>
+                 </div>
                 </div>
-                <p className="wait-card-desc">
-                  Standard table seating for dates.
-                </p>
-                <div className="wait-card-stats">
-                  <span className="wait-stat">
-                    <Users size={14} /> 9 in line
-                  </span>
-                  <span className="wait-stat">
-                    <Clock size={14} /> ~1 hr
-                  </span>
-                </div>
-              </div>
-
-              <div className="wait-card">
-                <div className="wait-card-top">
-                  <p className="wait-card-name">Dine-in · Party of 3–6</p>
-                  <span className="wait-badge-open">Open</span>
-                </div>
-                <p className="wait-card-desc">
-                  Larger tables and booths. Longer Wait-Time.
-                </p>
-                <div className="wait-card-stats">
-                  <span className="wait-stat">
-                    <Users size={14} /> 14 in line
-                  </span>
-                  <span className="wait-stat">
-                    <Clock size={14} /> ~2 hr 15 min
-                  </span>
-                </div>
-              </div>
-
-              <div className="wait-card">
-                <div className="wait-card-top">
-                  <p className="wait-card-name">Bar Seating</p>
-                  <span className="wait-badge-open">Open</span>
-                </div>
-                <p className="wait-card-desc">
-                  First-come bar stools. Bartender Service
-                </p>
-                <div className="wait-card-stats">
-                  <span className="wait-stat">
-                    <Users size={14} /> 5 in line
-                  </span>
-                  <span className="wait-stat">
-                    <Clock size={14} /> ~24 min
-                  </span>
-                </div>
-              </div>
+                  )
+                )
+              }
             </div>
           </div>
         </div>
@@ -165,5 +162,59 @@ function UserDashboard() {
     </div>
   );
 }
+
+//  <div className="wait-card">
+//                 <div className="wait-card-top"> 
+//                   <p className="wait-card-name">Dine-in · Party of 1–2</p>
+//                   <span className="wait-badge-open">Open</span>
+//                 </div>
+//                 <p className="wait-card-desc">
+//                   Standard table seating for dates.
+//                 </p>
+//                 <div className="wait-card-stats">
+//                   <span className="wait-stat">
+//                     <Users size={14} /> 9 in line
+//                   </span>
+//                   <span className="wait-stat">
+//                     <Clock size={14} /> ~1 hr
+//                   </span>
+//                 </div>
+//               </div>
+
+//               <div className="wait-card">
+//                 <div className="wait-card-top">
+//                   <p className="wait-card-name">Dine-in · Party of 3–6</p>
+//                   <span className="wait-badge-open">Open</span>
+//                 </div>
+//                 <p className="wait-card-desc">
+//                   Larger tables and booths. Longer Wait-Time.
+//                 </p>
+//                 <div className="wait-card-stats">
+//                   <span className="wait-stat">
+//                     <Users size={14} /> 14 in line
+//                   </span>
+//                   <span className="wait-stat">
+//                     <Clock size={14} /> ~2 hr 15 min
+//                   </span>
+//                 </div>
+//               </div>
+
+//               <div className="wait-card">
+//                 <div className="wait-card-top">
+//                   <p className="wait-card-name">Bar Seating</p>
+//                   <span className="wait-badge-open">Open</span>
+//                 </div>
+//                 <p className="wait-card-desc">
+//                   First-come bar stools. Bartender Service
+//                 </p>
+//                 <div className="wait-card-stats">
+//                   <span className="wait-stat">
+//                     <Users size={14} /> 5 in line
+//                   </span>
+//                   <span className="wait-stat">
+//                     <Clock size={14} /> ~24 min
+//                   </span>
+//                 </div>
+//               </div>
 
 export default UserDashboard;
