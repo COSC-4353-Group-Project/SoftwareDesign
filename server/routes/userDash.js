@@ -29,6 +29,7 @@ router.post('/', (req, res) => {
 })
 
 router.put('/:id', (req, res) => {
+    const id = Number(req.params.id)
     if (!Number.isInteger(id)) {
         return res.status(400).json({ error: 'Service id must be a whole number.' })
     }

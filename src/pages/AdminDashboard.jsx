@@ -60,6 +60,23 @@ function AdminDashboard(){
     // JUSTIN BACKEND STOOF: "Open Services" box worked out from the real list
     const openCount = services.filter((service) => service.isOpen).length
 
+    // Anaya: replacing the hardcoded frontend info with server stuff (similar to how the user dashboard worked for making sure the info that's presented is from the server)
+    const [adminDashItems, setadminDashItems] = useState([])
+    const [loading, setLoading] = useState(true)
+    useEffect(() => {
+        fetch('/api/adminDash')
+        .then((res) => res.json())
+        .then((data => {
+            setadminDashItems(data)
+            setLoading(false)
+        }))
+        .catch((err) => {
+            console.error('Failed to fetch admin items:', err)
+            setLoading(false)
+        })
+    }, [])
+
+
     return(
     <div className="admin-page">
         <div className="admin-header">
@@ -76,27 +93,22 @@ function AdminDashboard(){
 
         <div className="admin-layout">
             <div className="admin-stats-container">
-                <div className="admin-stats-box">
-                    <p className="admin-stats-text">Parties Waiting</p>
-                    <h2>28</h2>
-                    <p className="admin-stats-text">79 guests total</p>
-                </div>
-                <div className="admin-stats-box">
-                    <p className="admin-stats-text">Open Services</p>
-                    {/* JUSTIN BACKEND STOOF: real count. The other 3 boxes are still typed in, waiting on Anaya's endpoint */}
-                    <h2>{openCount} of {services.length}</h2>
-                    <p className="admin-stats-text">Accepting new guests</p>
-                </div>
-                <div className="admin-stats-box">
-                    <p className="admin-stats-text">Seated today</p>
-                    <h2>67</h2>
-                    <p className="admin-stats-text">Across All Services</p>
-                </div>
-                <div className="admin-skip-box">
-                    <p className="admin-skip-text">Skip Revenue Today</p>
-                    <h2>$69</h2>
-                    <p className="admin-skip-text">7 guests paid to skip</p>
-                </div>
+                {loading ? (
+                        <p>Loading admin statistics...</p>
+                    ) : adminDashItems.length === 0 ? (
+                        <p>No admin statistics to show.</p>
+                    ) : (
+                        adminDashItems.map((item) => {
+                            const isSkip = item.isSkip // Anaya: it's a bit scuffed but it basically stylies a box based on whether or not it falls under the "skip" category of summaries (not live yet)
+                            return ( // returns allow for the creation of variables (isSkip)
+                            <div className={isSkip ? "admin-skip-box" : "admin-stats-box"} key = {item.id}>
+                                <p className={isSkip ? "admin-skip-text" : "admin-stats-text"}>{item.name}</p>
+                                <h2>{isSkip ? `$${item.statistics}` : item.statistics}</h2>
+                                <p className={isSkip ? "admin-skip-text" : "admin-stats-text"}>{item.description}</p>
+                            </div>
+                            )
+                        })
+                    )}
             </div>
             <div>
                 <h1 className="admin-service-header">Services</h1>

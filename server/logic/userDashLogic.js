@@ -33,7 +33,7 @@ export function createUserItem(body) {
 }
 
 export function updateUserItem(id, body) {
-    const user = getUserById(id)
+    const user = getUserItemById(id)
     if(!user) {
         return undefined
     }

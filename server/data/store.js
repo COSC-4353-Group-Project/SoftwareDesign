@@ -103,6 +103,45 @@ function seedUserDashboard() {
   ]
 }
 
+// Anaya: responsible for connecting the admin dashboard stats (not the final build)
+function seedAdminDashboard() {
+    return [
+      { id: 1,
+        name: 'Parties Waiting',
+        statistics: 28,
+        description: '79 guests total'
+      },
+      { id: 2,
+        name: 'Open Services',
+        statistics: 3,
+        description: 'Accepting new guests'
+      },
+      { id: 3,
+        name: 'Seated Today',
+        statistics: 67,
+        description: 'Across All Services'
+      },
+      { id: 4,
+        name: 'Skip Revenue Today',
+        statistics: 69,
+        description: '7 guests paid to skip',
+        isSkip: true // used temporarily to determine the css style of a summary box on the admin board page
+
+      }
+    ]
+}
+
+function seedSkipDashboard() {
+    return [
+      {
+        id: 1,
+        name: 'Skip Revenue Today',
+        statistics: 69,
+        total: 7
+      }
+    ]
+}
+
 // Every module reads and writes these arrays. this is where you add a new array if your modeule needs one.
 export const store = {
   users: seedUsers(),
@@ -112,7 +151,9 @@ export const store = {
   queueEntries: [],
   notifications: [],
   history: seedHistory(),
-  userDash: seedUserDashboard()
+  userDash: seedUserDashboard(),
+  adminDashItem: seedAdminDashboard(),
+  skipDashItem: seedSkipDashboard() 
 }
 
 // Puts the store back to its starting data. Tests call this before each test (unit tests)
