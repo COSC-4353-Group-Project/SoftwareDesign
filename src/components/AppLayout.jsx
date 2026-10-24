@@ -1,19 +1,36 @@
 import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Bell, ListOrdered, LogOut } from 'lucide-react'
 import RoleSwitch from './RoleSwitch.jsx'
 import './AppLayout.css'
 
 const APP_NAME = 'BribeQueue' // placeholder until prof says ok
 
-// Fake data until the queue is wired up
-const MOCK_HAS_QUEUE_SPOT = true // if false, my queue doesnt
-
 // Shared frame for every signed-in page: top bar + the current page below it.
 export default function AppLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   // the logged-in user from the server, null if not logged in (or not loaded yet)
   const [user, setUser] = useState(null)
+  // JUSTIN BACKEND STOOF: true when the user has a spot in line, decides if "My Queue" shows
+  const [inQueue, setInQueue] = useState(false)
+
+  // JUSTIN BACKEND STOOF: ask the server if I'm in a queue (GET /api/queues/me, 404 = not in one).
+  // Runs again on every page change, so the tab shows up right after joining
+  // and goes away right after leaving.
+  useEffect(() => {
+    async function checkQueue() {
+      try {
+        const res = await fetch('/api/queues/me', {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
+        setInQueue(res.ok)
+      } catch {
+        setInQueue(false) // server is off: hide the tab
+      }
+    }
+    checkQueue()
+  }, [location.pathname])
 
   // Ask the server who is logged in, for the name in the top bar and
   // to decide if the "Staff" switch shows (staff only).
@@ -60,7 +77,7 @@ export default function AppLayout() {
           <nav className="top-bar-nav">
             <NavLink to="/dashboard" className="nav-link">Dashboard</NavLink>
             {/* orange = only shown when the user actually has a spot in line */}
-            {MOCK_HAS_QUEUE_SPOT && (
+            {inQueue && (
               <NavLink to="/status" className="nav-link nav-link-queue">My Queue</NavLink>
             )}
             <NavLink to="/history" className="nav-link">History</NavLink>
