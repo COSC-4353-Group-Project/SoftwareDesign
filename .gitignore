@@ -25,3 +25,4 @@ dist-ssr
 
 # Test coverage reports (npm run coverage)
 coverage
+server/data/bribesmart.db
