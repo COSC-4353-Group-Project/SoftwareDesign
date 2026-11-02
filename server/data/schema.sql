@@ -24,11 +24,20 @@ CREATE TABLE IF NOT EXISTS services (
   is_open INTEGER NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1))
 ) STRICT;
 
+-- THU: one queue per service. Queue status is open or closed.
+CREATE TABLE IF NOT EXISTS queues (
+  id INTEGER PRIMARY KEY,
+  service_id INTEGER NOT NULL UNIQUE REFERENCES services(id),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+) STRICT;
+
 -- a party in line. we never delete these, just change status, so they double as history
 -- position = queueOrder from A3, initial_position is for the progress bar on QueueStatusPage
 CREATE TABLE IF NOT EXISTS queue_entries (
   id INTEGER PRIMARY KEY,
   service_id INTEGER NOT NULL REFERENCES services(id),
+  queue_id INTEGER REFERENCES queues(id), -- THU: temp nullable column
   user_id INTEGER NOT NULL REFERENCES user_credentials(id),
   party_size INTEGER NOT NULL CHECK (party_size BETWEEN 1 AND 6),
   seating_preference TEXT NOT NULL CHECK (seating_preference IN ('Dine-in', 'Bar Seating')),
