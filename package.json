@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "server": "node --watch server/index.js",
+    "start": "node server/index.js",
     "test": "vitest run",
     "coverage": "vitest run --coverage"
   },
