@@ -270,6 +270,16 @@
   white-space: nowrap;
 }
 
+.wait-badge-closed {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-danger);
+  background: rgba(222, 99, 74, 0.12);
+  white-space: nowrap;
+}
+
 .wait-card-desc {
   margin: 0;
   font-size: 13px;

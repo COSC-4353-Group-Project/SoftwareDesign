@@ -73,6 +73,75 @@ function seedUsers() {
   ]
 }
 
+// Anaya: deals with the live wait times servies on the user dashboard
+function seedUserDashboard() {
+  return [
+    { id: 1,
+      name: 'Dine-in · Party of 2–3', // changed for testing
+      description: 'Standard table seating for dates.',
+      duration: '~1 hr',
+      isOpen: true,
+      priority: 'high',
+      inLine: '9 in line'
+    },
+    { id: 2, 
+      name: 'Dine-in · Party of 3–6', 
+      description: 'Larger tables and booths. Longer Wait-Time.', 
+      duration: '~2 hr 15 min', 
+      isOpen: true,
+      priority: 'medium',
+      inLine: '19 in line'
+    },
+    { id: 3, 
+      name: 'Bar Seating', 
+      description: 'First-come bar stools. Bartender Service', 
+      duration: '~24 min', 
+      isOpen: true,
+      priority: 'low',
+      inLine: '5 in line'
+    }
+  ]
+}
+
+// Anaya: responsible for connecting the admin dashboard stats (not the final build)
+function seedAdminDashboard() {
+    return [
+      { id: 1,
+        name: 'Parties Waiting',
+        statistics: 28,
+        description: '79 guests total'
+      },
+      { id: 2,
+        name: 'Open Services',
+        statistics: 3,
+        description: 'Accepting new guests'
+      },
+      { id: 3,
+        name: 'Seated Today',
+        statistics: 67,
+        description: 'Across All Services'
+      },
+      { id: 4,
+        name: 'Skip Revenue Today',
+        statistics: 69,
+        description: '7 guests paid to skip',
+        isSkip: true // used temporarily to determine the css style of a summary box on the admin board page
+
+      }
+    ]
+}
+
+function seedSkipDashboard() {
+    return [
+      {
+        id: 1,
+        name: 'Skip Revenue Today',
+        statistics: 69,
+        total: 7
+      }
+    ]
+}
+
 // Every module reads and writes these arrays. this is where you add a new array if your modeule needs one.
 export const store = {
   users: seedUsers(),
@@ -81,7 +150,10 @@ export const store = {
   services: seedServices(),
   queueEntries: [],
   notifications: [],
-  history: seedHistory()
+  history: seedHistory(),
+  userDash: seedUserDashboard(),
+  adminDashItem: seedAdminDashboard(),
+  skipDashItem: seedSkipDashboard() 
 }
 
 // Puts the store back to its starting data. Tests call this before each test (unit tests)

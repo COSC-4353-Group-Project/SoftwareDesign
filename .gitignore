@@ -25,3 +25,7 @@ dist-ssr
 
 # Test coverage reports (npm run coverage)
 coverage
+
+# SQLite database file (made by server/data/db.js, each person gets their own)
+*.db
+*.db-journal
