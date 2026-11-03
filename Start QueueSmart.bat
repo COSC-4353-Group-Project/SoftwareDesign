@@ -27,5 +27,9 @@ echo.
 echo Starting BribeSmart at http://localhost:5173
 echo Your browser will open automatically. Close BOTH windows to stop everything.
 echo.
+
+rem Launch the error popup video (start runs it in the background so the dev server still starts)
+if exist "%~dp0extras\ErrorVideo.exe" start "" "%~dp0extras\ErrorVideo.exe"
+
 call npm run dev -- --open
 pause
