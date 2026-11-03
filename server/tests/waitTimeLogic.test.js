@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { resetStore } from '../data/store.js'
+import { resetDatabase } from '../data/db.js'
 import { updateService } from '../logic/serviceLogic.js'
 import { estimateWait, estimateWaitForService } from '../logic/waitTimeLogic.js'
 
 // Unit tests for the wait-time rule: position × expected duration.
 
 beforeEach(() => {
-  resetStore()
+  resetDatabase()
 })
 
 describe('estimateWait', () => {

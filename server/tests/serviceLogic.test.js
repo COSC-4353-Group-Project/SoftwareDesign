@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { resetStore } from '../data/store.js'
+import { db, resetDatabase } from '../data/db.js'
 import { createService, getServiceById, listServices, updateService } from '../logic/serviceLogic.js'
 
 // Unit tests: call the logic functions directly, no HTTP involved.
+// The services live in the (in-memory) test database now, reset before every test.
 
 beforeEach(() => {
-  resetStore()
+  resetDatabase()
 })
 
 describe('listServices', () => {
@@ -17,6 +18,17 @@ describe('listServices', () => {
 describe('getServiceById', () => {
   test('finds a service that exists', () => {
     expect(getServiceById(3).name).toBe('Bar Seating')
+  })
+
+  test('turns the table columns back into the shape the pages use', () => {
+    expect(getServiceById(4)).toEqual({
+      id: 4,
+      name: 'Patio',
+      description: 'Outdoor tables. Closed when it rains.',
+      duration: 40,
+      priority: 'low',
+      isOpen: false,
+    })
   })
 
   test('returns undefined for an id that does not exist', () => {
@@ -52,6 +64,16 @@ describe('createService', () => {
     expect(service.id).toBe(5)
     expect(service.hacked).toBeUndefined()
   })
+
+  test('saves it to the services table', () => {
+    createService({ ...CHEFS_COUNTER, isOpen: false })
+    const row = db.prepare('SELECT duration_minutes, is_open FROM services WHERE id = 5').get()
+    expect(row).toEqual({ duration_minutes: 90, is_open: 0 })
+  })
+
+  test('the database rejects a duplicate name even if the validator is skipped', () => {
+    expect(() => createService({ ...CHEFS_COUNTER, name: 'bar seating' })).toThrow(/UNIQUE/)
+  })
 })
 
 describe('updateService', () => {
@@ -60,6 +82,12 @@ describe('updateService', () => {
     expect(service.id).toBe(4)
     expect(service.isOpen).toBe(true)
     expect(getServiceById(4).duration).toBe(90)
+  })
+
+  test('only changes that one row', () => {
+    updateService(4, { ...CHEFS_COUNTER, name: 'Patio' })
+    expect(getServiceById(3).name).toBe('Bar Seating')
+    expect(listServices()).toHaveLength(4)
   })
 
   test('returns undefined for an id that does not exist', () => {
