@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { findUserByPhone, loginUser, registerUser } from '../logic/authLogic.js'
+import { findUserByPhone, loginUser, logoutUser, registerUser } from '../logic/authLogic.js'
 import { requireLogin } from '../middleware/auth.js'
 import { hasErrors, validateLogin, validateRegister } from '../validators/authValidator.js'
 
@@ -42,6 +42,14 @@ router.post('/login', (req, res) => {
 // Who is logged in. Other pages (dashboards, header) can use this for the user's name and role.
 router.get('/me', requireLogin, (req, res) => {
   res.json(req.user)
+})
+
+// POST /api/auth/logout   header: Authorization: Bearer <token>
+// Deletes the session so that token stops working, even if someone copied it.
+router.post('/logout', requireLogin, (req, res) => {
+  const token = req.headers.authorization.slice('Bearer '.length)
+  logoutUser(token)
+  res.json({ ok: true })
 })
 
 export default router

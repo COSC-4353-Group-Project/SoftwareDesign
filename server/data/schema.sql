@@ -4,15 +4,24 @@
 -- STRICT = sqlite rejects wrong types (normally it lets you put text in an INTEGER column lol)
 -- no booleans in sqlite so true/false is 1/0
 
--- login info. password_hash is hashed, see logic/passwordLogic.js
+-- login info. you log in with name + phone, the phone is the password.
+-- phone_hash is the phone hashed (see logic/passwordLogic.js) so the password isn't stored as plain text
 CREATE TABLE IF NOT EXISTS user_credentials (
   id INTEGER PRIMARY KEY,
-  email TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(email) <= 254 AND email LIKE '%_@_%._%'),
-  password_hash TEXT NOT NULL,
+  phone_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
--- NOCASE so Bob@x.com and bob@x.com count as the same email
+
+-- everything else about a user. one profile per user, so user_id is the primary key AND the foreign key.
+-- phone is 10 digits like '7135550123' (authValidator.normalizePhone), kept here too for table-ready texts.
+-- UNIQUE so two accounts can't share a phone
+CREATE TABLE IF NOT EXISTS user_profiles (
+  user_id INTEGER PRIMARY KEY REFERENCES user_credentials(id) ON DELETE CASCADE,
+  full_name TEXT NOT NULL CHECK (length(trim(full_name)) BETWEEN 1 AND 60),
+  phone TEXT NOT NULL UNIQUE CHECK (length(phone) = 10),
+  sms_opt_in INTEGER NOT NULL DEFAULT 0 CHECK (sms_opt_in IN (0, 1))
+) STRICT;
 
 -- same limits as serviceValidator.js. is_open is the isOpen toggle on AdminServicesPage
 CREATE TABLE IF NOT EXISTS services (

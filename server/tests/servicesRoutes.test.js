@@ -1,7 +1,6 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
-import { resetStore } from '../data/store.js'
 import { resetDatabase } from '../data/db.js'
 import { loginUser } from '../logic/authLogic.js'
 
@@ -12,10 +11,8 @@ import { loginUser } from '../logic/authLogic.js'
 // and send the token in the Authorization header.
 let adminToken
 
-// Services are in the database now, but logins are still in store.js until auth moves over,
-// so both get reset.
+// Services and logins are both in the database now, so resetting it is enough.
 beforeEach(() => {
-  resetStore()
   resetDatabase()
   adminToken = loginUser('Admin', '9035550100').token
 })

@@ -30,20 +30,26 @@ db.exec('PRAGMA foreign_keys = ON')
 // Create any tables that don't exist yet.
 db.exec(readFileSync(path.join(import.meta.dirname, 'schema.sql'), 'utf8'))
 
-// Hashing is slow on purpose, so the seed passwords are hashed once here and reused by
+// Hashing is slow on purpose, so the seed phones are hashed once here and reused by
 // every reset instead of being hashed again before each test.
-// Seed logins: admin@bribesmart.test / Admin123!   justin@bribesmart.test / Password123!
-const ADMIN_PASSWORD_HASH = hashPassword('Admin123!')
-const GUEST_PASSWORD_HASH = hashPassword('Password123!')
+// Seed logins (name + phone): Admin / 9035550100   Justin Hendrix / 7135550123
+const ADMIN_PHONE_HASH = hashPassword('9035550100')
+const JUSTIN_PHONE_HASH = hashPassword('7135550123')
 
 // Starting data, the same as the seeds in store.js. Ids are given so they match A3
 // (admin is user 1, Justin is user 2, services 1-4).
 function seedDatabase() {
   const addCredentials = db.prepare(
-    'INSERT INTO user_credentials (id, email, password_hash, role) VALUES (?, ?, ?, ?)'
+    'INSERT INTO user_credentials (id, phone_hash, role) VALUES (?, ?, ?)'
   )
-  addCredentials.run(1, 'admin@bribesmart.test', ADMIN_PASSWORD_HASH, 'admin')
-  addCredentials.run(2, 'justin@bribesmart.test', GUEST_PASSWORD_HASH, 'user')
+  addCredentials.run(1, ADMIN_PHONE_HASH, 'admin')
+  addCredentials.run(2, JUSTIN_PHONE_HASH, 'user')
+
+  const addProfile = db.prepare(
+    'INSERT INTO user_profiles (user_id, full_name, phone, sms_opt_in) VALUES (?, ?, ?, ?)'
+  )
+  addProfile.run(1, 'Admin', '9035550100', 0)
+  addProfile.run(2, 'Justin Hendrix', '7135550123', 1)
 
   const addService = db.prepare(
     'INSERT INTO services (id, name, description, duration_minutes, priority, is_open) VALUES (?, ?, ?, ?, ?, ?)'
@@ -83,7 +89,9 @@ export function resetDatabase() {
     DELETE FROM sessions;
     DELETE FROM queue_skips;
     DELETE FROM queue_entries;
+    DELETE FROM queues;
     DELETE FROM services;
+    DELETE FROM user_profiles;
     DELETE FROM user_credentials;
   `)
   seedDatabase()

@@ -56,22 +56,7 @@ function seedHistory() {
   ]
 }
 
-// Starting accounts. Log in with name + phone (no passwords in A3).
-// The admin is the only way to get staff access, since registering always makes a 'user'.
-function seedUsers() {
-  return [
-    { id: 1,
-      name: 'Admin',
-      phone: '9035550100',
-      smsOptIn: false,
-      role: 'admin' },
-    { id: 2,
-      name: 'Justin Hendrix',
-      phone: '7135550123',
-      smsOptIn: true,
-      role: 'user' },
-  ]
-}
+// Accounts and logins moved to the database in A4 (user_credentials, user_profiles, sessions).
 
 // Anaya: deals with the live wait times servies on the user dashboard
 function seedUserDashboard() {
@@ -144,9 +129,6 @@ function seedSkipDashboard() {
 
 // Every module reads and writes these arrays. this is where you add a new array if your modeule needs one.
 export const store = {
-  users: seedUsers(),
-  // who is logged in: { token, userId }. Login adds one, the token goes to the browser.
-  sessions: [],
   services: seedServices(),
   queueEntries: [],
   notifications: [],
@@ -159,8 +141,6 @@ export const store = {
 // Puts the store back to its starting data. Tests call this before each test (unit tests)
 // basically resetting changes on each server restart.
 export function resetStore() {
-  store.users = seedUsers()
-  store.sessions = []
   store.services = seedServices()
   store.queueEntries = []
   store.notifications = []

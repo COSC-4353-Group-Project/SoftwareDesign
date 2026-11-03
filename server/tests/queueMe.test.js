@@ -2,6 +2,7 @@ import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
 import { resetStore } from '../data/store.js'
+import { resetDatabase } from '../data/db.js'
 import { loginUser } from '../logic/authLogic.js'
 
 // JUSTIN BACKEND STOOF: route tests for GET /api/queues/me (the Queue Status page).
@@ -11,6 +12,7 @@ let token
 
 beforeEach(() => {
   resetStore()
+  resetDatabase()
   token = loginUser('Justin Hendrix', '7135550123').token
 })
 

@@ -2,7 +2,8 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 
 const KEY_LENGTH = 64 // bytes of hash scrypt gives back
 
-// Returns "salt:hash" (both as hex text). This is what goes in user_credentials.password_hash.
+// Returns "salt:hash" (both as hex text). This is what goes in user_credentials.phone_hash
+// (the phone is the password).
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex')
   const hash = scryptSync(password, salt, KEY_LENGTH).toString('hex')

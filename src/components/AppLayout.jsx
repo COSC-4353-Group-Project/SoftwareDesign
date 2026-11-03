@@ -50,8 +50,16 @@ export default function AppLayout() {
     loadUser()
   }, [])
 
-  // forget the token so the next visit has to log in again
-  function handleSignOut() {
+  // tell the server to delete the session, then forget the token so the next visit has to log in again
+  async function handleSignOut() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+    } catch {
+      // server unreachable, still sign out on this side
+    }
     localStorage.removeItem('token')
     navigate('/login')
   }

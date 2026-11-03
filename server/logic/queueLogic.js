@@ -3,6 +3,7 @@ import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
 import { notifyQueueJoined, notifyAlmostReady } from "./notificationLogic.js";
 import { createHistory, updateHistory } from "./historyLogic.js";
+import { getUserById } from "./authLogic.js";
 
 const PRICE_PER_SPOT = 3;
 const FRONT_OF_LINE_PRICE = 20;
@@ -284,7 +285,8 @@ export function leaveQueue(entryId) {
 // return all queue entries with current info
 export function getAllQueueEntries() {
   return store.queueEntries.map((entry) => {
-    const user = store.users.find((user) => user.id === entry.userId);
+    // JUSTIN: users are in the database now (authLogic), not store.users
+    const user = getUserById(entry.userId);
 
     return {
       ...getQueueEntry(entry.id),
