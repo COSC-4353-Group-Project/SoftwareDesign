@@ -1,5 +1,7 @@
 import { Router } from 'express'
-import { createService, getServiceById, listServices, updateService } from '../logic/serviceLogic.js'
+import {
+  createService, deleteService, getServiceById, listServices, serviceIsInUse, updateService,
+} from '../logic/serviceLogic.js'
 import { requireAdmin } from '../middleware/auth.js'
 import { hasErrors, validateService } from '../validators/serviceValidator.js'
 
@@ -57,6 +59,25 @@ router.put('/:id', requireAdmin, (req, res) => {
   }
 
   res.json(updateService(id, req.body))
+})
+
+// DELETE /api/services/:id   sends back the service that was deleted
+router.delete('/:id', requireAdmin, (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: 'Service id must be a whole number.' })
+  }
+  const service = getServiceById(id)
+  if (!service) {
+    return res.status(404).json({ error: 'Service not found.' })
+  }
+  // 409 = conflict, the request is fine but the data won't allow it
+  if (serviceIsInUse(id)) {
+    return res.status(409).json({ error: "Guests have queued for this service, so it can't be deleted. Close it instead." })
+  }
+
+  deleteService(id)
+  res.json(service)
 })
 
 export default router

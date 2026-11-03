@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clock, Pencil, Users } from 'lucide-react'
+import { Clock, Pencil, Trash2, Users } from 'lucide-react'
 import './AdminServicesPage.css'
 
 // Services now come from the backend (GET /api/services, see server/routes/services.js).
@@ -189,6 +189,38 @@ function AdminServicesPage() {
 
     resetForm()
   }
+
+  // Delete button, only shows while editing. Asks first since there's no undo.
+  async function handleDelete() {
+    const service = services.find((s) => s.id === editingId)
+    if (!window.confirm(`Delete "${service.name}"? This can't be undone.`)) {
+      return
+    }
+    setSaveError('')
+
+    let res
+    let data
+    try {
+      res = await fetch(`/api/services/${editingId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      data = await res.json()
+    } catch {
+      setSaveError('Could not reach the server. Is the backend running?')
+      return
+    }
+
+    // e.g. 409 when guests have already queued for it, the server says to close it instead
+    if (!res.ok) {
+      setSaveError(data.error)
+      return
+    }
+
+    // keep every service except the deleted one
+    setServices(services.filter((s) => s.id !== editingId))
+    resetForm()
+  }
 //END BACKEND STOOF
 
   // copy of the list sorted high to medium to low. makes a copy first
@@ -350,6 +382,11 @@ function AdminServicesPage() {
               {/* only show Cancel while editing, a new service has nothing to cancel */}
               {editingId !== null && (
                 <button type="button" className="service-cancel-button" onClick={resetForm}>Cancel</button>
+              )}
+              {editingId !== null && (
+                <button type="button" className="service-delete-button" onClick={handleDelete}>
+                  <Trash2 size={14} /> Delete
+                </button>
               )}
             </div>
             {saveError && <p className="service-error">{saveError}</p>}

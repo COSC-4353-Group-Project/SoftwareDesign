@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { db, resetDatabase } from '../data/db.js'
-import { createService, getServiceById, listServices, updateService } from '../logic/serviceLogic.js'
+import {
+  createService, deleteService, getServiceById, listServices, serviceIsInUse, updateService,
+} from '../logic/serviceLogic.js'
 
 // Unit tests: call the logic functions directly, no HTTP involved.
 // The services live in the (in-memory) test database now, reset before every test.
@@ -92,5 +94,27 @@ describe('updateService', () => {
 
   test('returns undefined for an id that does not exist', () => {
     expect(updateService(999, CHEFS_COUNTER)).toBeUndefined()
+  })
+})
+
+describe('serviceIsInUse', () => {
+  test('true when someone has queued for it (Justin has history on 1, 3 and 4)', () => {
+    expect(serviceIsInUse(1)).toBe(true)
+  })
+
+  test('false when nobody has', () => {
+    expect(serviceIsInUse(2)).toBe(false)
+  })
+})
+
+describe('deleteService', () => {
+  test('removes the service from the table', () => {
+    expect(deleteService(2)).toBe(true)
+    expect(getServiceById(2)).toBeUndefined()
+    expect(listServices()).toHaveLength(3)
+  })
+
+  test('returns false for an id that does not exist', () => {
+    expect(deleteService(999)).toBe(false)
   })
 })

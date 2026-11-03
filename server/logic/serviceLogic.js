@@ -73,3 +73,18 @@ export function updateService(id, body) {
   }
   return getServiceById(id)
 }
+
+// True if any queue entry, waiting or finished, points at this service.
+// Those entries are people's history, so the service can't be deleted out from under them
+// (the foreign key on queue_entries would stop it anyway). Close it instead.
+export function serviceIsInUse(id) {
+  const row = db.prepare('SELECT COUNT(*) AS count FROM queue_entries WHERE service_id = ?').get(id)
+  return row.count > 0
+}
+
+// Deletes a service. Returns true if it was deleted, false if there's no service with that id.
+// Check serviceIsInUse first, the route does.
+export function deleteService(id) {
+  const result = db.prepare('DELETE FROM services WHERE id = ?').run(id)
+  return result.changes > 0
+}
