@@ -2,6 +2,7 @@ import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
 import { resetStore } from '../data/store.js'
+import { resetDatabase } from '../data/db.js'
 import { loginUser } from '../logic/authLogic.js'
 
 // Route tests: Supertest sends fake HTTP requests to the app, no real server needed.
@@ -11,8 +12,11 @@ import { loginUser } from '../logic/authLogic.js'
 // and send the token in the Authorization header.
 let adminToken
 
+// Services are in the database now, but logins are still in store.js until auth moves over,
+// so both get reset.
 beforeEach(() => {
   resetStore()
+  resetDatabase()
   adminToken = loginUser('Admin', '9035550100').token
 })
 
@@ -120,6 +124,38 @@ describe('PUT /api/services/:id', () => {
   test('returns 404 when the service does not exist', async () => {
     const res = await request(app).put('/api/services/999').set('Authorization', `Bearer ${adminToken}`).send(CHEFS_COUNTER)
     expect(res.status).toBe(404)
+  })
+})
+
+describe('DELETE /api/services/:id', () => {
+  test('deletes a service nobody has queued for and sends it back', async () => {
+    const res = await request(app).delete('/api/services/2').set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(200)
+    expect(res.body.name).toBe('Dine-in · Party of 3–6')
+
+    const gone = await request(app).get('/api/services/2')
+    expect(gone.status).toBe(404)
+  })
+
+  test('returns 409 when guests have queued for it', async () => {
+    const res = await request(app).delete('/api/services/1').set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatch(/Close it instead/)
+  })
+
+  test('returns 400 when the id is not a number', async () => {
+    const res = await request(app).delete('/api/services/abc').set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(400)
+  })
+
+  test('returns 404 when the service does not exist', async () => {
+    const res = await request(app).delete('/api/services/999').set('Authorization', `Bearer ${adminToken}`)
+    expect(res.status).toBe(404)
+  })
+
+  test('401 when not logged in', async () => {
+    const res = await request(app).delete('/api/services/2')
+    expect(res.status).toBe(401)
   })
 })
 
