@@ -69,6 +69,21 @@ CREATE TABLE IF NOT EXISTS queue_skips (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
 
+-- THU: user can only have one waiting queue entry
+-- Served and cancelled entries still available for history
+CREATE UNIQUE INDEX IF NOT EXISTS idx_queue_entries_one_waiting_per_user
+ON queue_entries (user_id)
+WHERE status = 'waiting';
+
+-- THU: for looking up waiting entries by service and position
+CREATE INDEX IF NOT EXISTS idx_queue_entries_service_waiting_order
+ON queue_entries (service_id, position, id)
+WHERE status = 'waiting';
+
+-- THU: for retrieving bribe purchases for a queue entry
+CREATE INDEX IF NOT EXISTS idx_queue_skips_entry
+ON queue_skips (queue_entry_id);
+
 -- logged in tokens (store.sessions before), saved so a restart doesn't log everyone out
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
@@ -90,3 +105,27 @@ FROM queue_entries
 JOIN services ON services.id = queue_entries.service_id
 LEFT JOIN queue_skips ON queue_skips.queue_entry_id = queue_entries.id
 GROUP BY queue_entries.id;
+
+-- THU: new service gets a queue automatically
+CREATE TRIGGER IF NOT EXISTS trg_service_queue_insert
+AFTER INSERT ON services
+BEGIN
+  INSERT INTO queues (service_id, status)
+  VALUES (NEW.id, CASE WHEN NEW.is_open = 1 THEN 'open' ELSE 'closed' END);
+END;
+
+-- opening/closing service changes queue availability
+CREATE TRIGGER IF NOT EXISTS trg_service_queue_availability
+AFTER UPDATE OF is_open ON services
+BEGIN
+  UPDATE queues
+  SET status = CASE WHEN NEW.is_open = 1 THEN 'open' ELSE 'closed' END
+  WHERE service_id = NEW.id;
+END;
+
+-- if entries exist, existing foreign keys prevent deletion
+CREATE TRIGGER IF NOT EXISTS trg_service_queue_delete
+BEFORE DELETE ON services
+BEGIN
+  DELETE FROM queues WHERE service_id = OLD.id;
+END;

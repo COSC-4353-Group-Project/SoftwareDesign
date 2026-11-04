@@ -1,7 +1,7 @@
-import { DatabaseSync } from 'node:sqlite'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { hashPassword } from '../logic/passwordLogic.js'
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { hashPassword } from "../logic/passwordLogic.js";
 
 // The database for Assignment 4. This replaces store.js.
 // node:sqlite is built into Node (no package to install). Every call is synchronous,
@@ -20,79 +20,171 @@ import { hashPassword } from '../logic/passwordLogic.js'
 // Vitest sets process.env.VITEST while tests run. Tests get a database that only lives
 // in memory, so they start clean and never touch the real file.
 // The real one is bribesmart.db next to this file. SQLite creates it the first time.
-const DB_FILE = process.env.VITEST ? ':memory:' : path.join(import.meta.dirname, 'bribesmart.db')
+const DB_FILE = process.env.VITEST
+  ? ":memory:"
+  : path.join(import.meta.dirname, "bribesmart.db");
 
-export const db = new DatabaseSync(DB_FILE)
+export const db = new DatabaseSync(DB_FILE);
 
 // SQLite ignores REFERENCES (foreign keys) unless this is switched on.
-db.exec('PRAGMA foreign_keys = ON')
+db.exec("PRAGMA foreign_keys = ON");
 
 // Create any tables that don't exist yet.
-db.exec(readFileSync(path.join(import.meta.dirname, 'schema.sql'), 'utf8'))
+db.exec(readFileSync(path.join(import.meta.dirname, "schema.sql"), "utf8"));
+
+// THU: CREATE TABLE IF NOT EXISTS does not update existing tables
+const entryColumns = db.prepare("PRAGMA table_info(queue_entries)").all();
+
+if (!entryColumns.some((column) => column.name === "queue_id")) {
+  db.exec(
+    "ALTER TABLE queue_entries ADD COLUMN queue_id INTEGER REFERENCES queues(id)",
+  );
+}
+
+// THU: create any missing service queues and link older entries(new services will be handled  trigger)
+function linkServiceQueues() {
+  db.exec(`
+    INSERT INTO queues (service_id, status)
+    SELECT
+      s.id,
+      CASE WHEN s.is_open = 1 THEN 'open' ELSE 'closed' END
+    FROM services AS s
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM queues AS q
+      WHERE q.service_id = s.id
+    );
+
+    UPDATE queue_entries
+    SET queue_id = (
+      SELECT q.id
+      FROM queues AS q
+      WHERE q.service_id = queue_entries.service_id
+    )
+    WHERE queue_id IS NULL;
+  `);
+}
 
 // Hashing is slow on purpose, so the seed phones are hashed once here and reused by
 // every reset instead of being hashed again before each test.
 // Seed logins (name + phone): Admin / 9035550100   Justin Hendrix / 7135550123
-const ADMIN_PHONE_HASH = hashPassword('9035550100')
-const JUSTIN_PHONE_HASH = hashPassword('7135550123')
+const ADMIN_PHONE_HASH = hashPassword("9035550100");
+const JUSTIN_PHONE_HASH = hashPassword("7135550123");
 
 // Starting data, the same as the seeds in store.js. Ids are given so they match A3
 // (admin is user 1, Justin is user 2, services 1-4).
 function seedDatabase() {
   const addCredentials = db.prepare(
-    'INSERT INTO user_credentials (id, phone_hash, role) VALUES (?, ?, ?)'
-  )
-  addCredentials.run(1, ADMIN_PHONE_HASH, 'admin')
-  addCredentials.run(2, JUSTIN_PHONE_HASH, 'user')
+    "INSERT INTO user_credentials (id, phone_hash, role) VALUES (?, ?, ?)",
+  );
+  addCredentials.run(1, ADMIN_PHONE_HASH, "admin");
+  addCredentials.run(2, JUSTIN_PHONE_HASH, "user");
 
   const addProfile = db.prepare(
-    'INSERT INTO user_profiles (user_id, full_name, phone, sms_opt_in) VALUES (?, ?, ?, ?)'
-  )
-  addProfile.run(1, 'Admin', '9035550100', 0)
-  addProfile.run(2, 'Justin Hendrix', '7135550123', 1)
+    "INSERT INTO user_profiles (user_id, full_name, phone, sms_opt_in) VALUES (?, ?, ?, ?)",
+  );
+  addProfile.run(1, "Admin", "9035550100", 0);
+  addProfile.run(2, "Justin Hendrix", "7135550123", 1);
 
   const addService = db.prepare(
-    'INSERT INTO services (id, name, description, duration_minutes, priority, is_open) VALUES (?, ?, ?, ?, ?, ?)'
-  )
-  addService.run(1, 'Dine-in · Party of 1–2', 'Standard table seating for dates.', 45, 'high', 1)
-  addService.run(2, 'Dine-in · Party of 3–6', 'Larger tables and booths. Longer Wait-Time.', 60, 'medium', 1)
-  addService.run(3, 'Bar Seating', 'First-come bar stools. Bartender Service', 20, 'medium', 1)
-  addService.run(4, 'Patio', 'Outdoor tables. Closed when it rains.', 40, 'low', 0)
+    "INSERT INTO services (id, name, description, duration_minutes, priority, is_open) VALUES (?, ?, ?, ?, ?, ?)",
+  );
+  addService.run(
+    1,
+    "Dine-in · Party of 1–2",
+    "Standard table seating for dates.",
+    45,
+    "high",
+    1,
+  );
+  addService.run(
+    2,
+    "Dine-in · Party of 3–6",
+    "Larger tables and booths. Longer Wait-Time.",
+    60,
+    "medium",
+    1,
+  );
+  addService.run(
+    3,
+    "Bar Seating",
+    "First-come bar stools. Bartender Service",
+    20,
+    "medium",
+    1,
+  );
+  addService.run(
+    4,
+    "Patio",
+    "Outdoor tables. Closed when it rains.",
+    40,
+    "low",
+    0,
+  );
 
   // Justin's past visits, so the history page has something to show (seedHistory in store.js).
   const addEntry = db.prepare(`
     INSERT INTO queue_entries
       (id, service_id, user_id, party_size, seating_preference, position, initial_position, status, joined_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-  addEntry.run(1, 1, 2, 2, 'Dine-in', 1, 4, 'served', '2026-09-17 18:30:00')
-  addEntry.run(2, 4, 2, 2, 'Dine-in', 1, 6, 'served', '2026-09-19 19:05:00')
-  addEntry.run(3, 3, 2, 1, 'Bar Seating', 1, 3, 'cancelled', '2026-09-27 21:10:00')
+  `);
+  addEntry.run(1, 1, 2, 2, "Dine-in", 1, 4, "served", "2026-09-17 18:30:00");
+  addEntry.run(2, 4, 2, 2, "Dine-in", 1, 6, "served", "2026-09-19 19:05:00");
+  addEntry.run(
+    3,
+    3,
+    2,
+    1,
+    "Bar Seating",
+    1,
+    3,
+    "cancelled",
+    "2026-09-27 21:10:00",
+  );
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO queue_skips (queue_entry_id, label, from_position, to_position, price, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
+  `,
+  ).run(2, "Front of line", 6, 1, 20, "2026-09-19 19:07:00");
 }
 
 // Only seed a brand new database. After that the data is whatever people have saved.
-const { count } = db.prepare('SELECT COUNT(*) AS count FROM user_credentials').get()
+const { count } = db
+  .prepare("SELECT COUNT(*) AS count FROM user_credentials")
+  .get();
 if (count === 0) {
-  seedDatabase()
+  seedDatabase();
 }
+// THU: link service queues after database init
+linkServiceQueues();
 
 // Empties every table and puts the starting data back. Tests call this before each test,
 // the same way they called resetStore().
 // Children are deleted before their parents, otherwise the foreign keys block the delete.
+// THU: reset database records in one transaction
+// Delete child records before parent records to preserve integrity
 export function resetDatabase() {
-  db.exec(`
-    DELETE FROM sessions;
-    DELETE FROM queue_skips;
-    DELETE FROM queue_entries;
-    DELETE FROM queues;
-    DELETE FROM services;
-    DELETE FROM user_profiles;
-    DELETE FROM user_credentials;
-  `)
-  seedDatabase()
+  db.exec("BEGIN");
+
+  try {
+    db.exec(`
+      DELETE FROM sessions;
+      DELETE FROM queue_skips;
+      DELETE FROM queue_entries;
+      DELETE FROM queues;
+      DELETE FROM services;
+      DELETE FROM user_profiles;
+      DELETE FROM user_credentials;
+    `);
+
+    seedDatabase();
+    linkServiceQueues();
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }
