@@ -127,27 +127,15 @@ function seedDatabase() {
     INSERT INTO queue_entries
       (id, service_id, user_id, party_size, seating_preference, position, initial_position, status, joined_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  addEntry.run(1, 1, 2, 2, "Dine-in", 1, 4, "served", "2026-09-17 18:30:00");
-  addEntry.run(2, 4, 2, 2, "Dine-in", 1, 6, "served", "2026-09-19 19:05:00");
-  addEntry.run(
-    3,
-    3,
-    2,
-    1,
-    "Bar Seating",
-    1,
-    3,
-    "cancelled",
-    "2026-09-27 21:10:00",
-  );
+  `)
+  addEntry.run(1, 1, 2, 2, 'Dine-in', 1, 4, 'served', '2026-09-17 18:30:00')
+  addEntry.run(2, 4, 2, 2, 'Dine-in', 1, 6, 'served', '2026-09-19 19:05:00')
+  addEntry.run(3, 3, 2, 1, 'Bar Seating', 1, 3, 'cancelled', '2026-09-27 21:10:00')
 
-  db.prepare(
-    `
+  db.prepare(`
     INSERT INTO queue_skips (queue_entry_id, label, from_position, to_position, price, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `,
-  ).run(2, "Front of line", 6, 1, 20, "2026-09-19 19:07:00");
+  `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
 }
 
 // Only seed a brand new database. After that the data is whatever people have saved.
@@ -156,6 +144,9 @@ const { count } = db
   .get();
 if (count === 0) {
   seedDatabase();
+  if (!process.env.VITEST) {
+    seedDemoLine();
+  }
 }
 // THU: link service queues after database init
 linkServiceQueues();

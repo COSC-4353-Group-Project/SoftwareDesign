@@ -30,7 +30,17 @@ describe('getServiceById', () => {
       duration: 40,
       priority: 'low',
       isOpen: false,
+      waiting: 0,
     })
+  })
+
+  test('counts only the people still waiting (Justin\'s seeded visits are all finished)', () => {
+    expect(getServiceById(1).waiting).toBe(0)
+    db.prepare(`
+      INSERT INTO queue_entries (service_id, user_id, party_size, seating_preference, position, initial_position)
+      VALUES (1, 2, 2, 'Dine-in', 1, 1)
+    `).run()
+    expect(getServiceById(1).waiting).toBe(1)
   })
 
   test('returns undefined for an id that does not exist', () => {
