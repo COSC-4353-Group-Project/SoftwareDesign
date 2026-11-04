@@ -16,17 +16,27 @@ function toService(row) {
     duration: row.duration_minutes,
     priority: row.priority,
     isOpen: row.is_open === 1,
+    waiting: row.waiting,
   }
 }
 
+// Every service plus how many people are waiting for it right now ("X waiting" on AdminServicesPage).
+// The (SELECT COUNT(*) ...) runs once per service row, so services nobody is waiting for get 0.
+const SELECT_SERVICE = `
+  SELECT services.*,
+    (SELECT COUNT(*) FROM queue_entries
+     WHERE queue_entries.service_id = services.id AND queue_entries.status = 'waiting') AS waiting
+  FROM services
+`
+
 export function listServices() {
-  const rows = db.prepare('SELECT * FROM services ORDER BY id').all()
+  const rows = db.prepare(`${SELECT_SERVICE} ORDER BY id`).all()
   return rows.map(toService)
 }
 
 // Returns the service, or undefined if there is no service with that id.
 export function getServiceById(id) {
-  const row = db.prepare('SELECT * FROM services WHERE id = ?').get(id)
+  const row = db.prepare(`${SELECT_SERVICE} WHERE id = ?`).get(id)
   if (!row) {
     return undefined
   }

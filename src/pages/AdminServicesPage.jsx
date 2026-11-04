@@ -3,7 +3,7 @@ import { Clock, Pencil, Trash2, Users } from 'lucide-react'
 import './AdminServicesPage.css'
 
 // Services now come from the backend (GET /api/services, see server/routes/services.js).
-// The starting ones live in server/data/store.js.
+// They live in the services table (server/data/db.js seeds the starting ones).
 
 // TODO: contact prof about what "priority level" is supposed to mean for a service.
 // The assignment 2 checklist requires the field but never explains it. For now it only decides
@@ -259,7 +259,7 @@ function AdminServicesPage() {
 
                 <div className="service-stats">
                   <span className="service-stat"><Clock size={14} /> {service.duration} min per party</span>
-                  {/* TODO: the backend doesn't count who's waiting yet, that needs Thu's queue module. Shows 0 until then. */}
+                  {/* waiting is counted from queue_entries in serviceLogic.js */}
                   <span className="service-stat"><Users size={14} /> {service.waiting ?? 0} waiting</span>
                 </div>
               </div>

@@ -75,10 +75,78 @@ function seedDatabase() {
   `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
 }
 
+// A line of made up guests waiting right now, so the queue pages have people in them.
+// Kept out of seedDatabase on purpose: the tests expect only Admin + Justin (next new user is id 3)
+// and nobody queued for service 2. So this only runs for the real bribesmart.db, never in tests.
+// Seed logins for these are name + phone, same as Justin.
+const DEMO_GUESTS = [
+  // id, full name, phone, sms opt in
+  [3, 'Maria Gonzalez', '7135550142', 1],
+  [4, 'Derek Okafor', '2815550177', 0],
+  [5, 'Priya Patel', '8325550118', 1],
+  [6, 'Tommy Nguyen', '7135550163', 1],
+  [7, 'Sarah Whitfield', '2815550125', 0],
+  [8, 'Marcus Bell', '8325550190', 1],
+  [9, 'Aiko Tanaka', '7135550111', 1],
+  [10, 'Luis Ramirez', '2815550136', 0],
+  [11, 'Hannah Brooks', '8325550154', 1],
+]
+
+// Who is in line. position = their spot in that service's line, initial_position = where they started.
+// Patio (service 4) is closed, so nobody is waiting for it.
+const DEMO_LINE = [
+  // id, service, user, party size, seating, position, initial position, type, notes, minutes ago
+  [4, 1, 3, 2, 'Dine-in', 1, 1, 'walk-in', '', 34],
+  [5, 1, 5, 2, 'Dine-in', 2, 4, 'walk-in', 'Anniversary dinner', 6], // paid to skip from 4 to 2
+  [6, 1, 9, 1, 'Dine-in', 3, 2, 'reservation', '', 18],
+  [7, 1, 11, 2, 'Dine-in', 4, 3, 'walk-in', 'High chair please', 12],
+  [8, 2, 4, 5, 'Dine-in', 1, 1, 'reservation', 'Birthday, bringing a cake', 41],
+  [9, 2, 7, 4, 'Dine-in', 2, 2, 'walk-in', 'Wheelchair accessible table', 22],
+  [10, 2, 10, 6, 'Dine-in', 3, 3, 'walk-in', '', 9],
+  [11, 3, 6, 1, 'Bar Seating', 1, 1, 'walk-in', '', 15],
+  [12, 3, 8, 2, 'Bar Seating', 2, 2, 'walk-in', 'Watching the game', 4],
+]
+
+// "minutes ago" as the same 'YYYY-MM-DD HH:MM:SS' (UTC) format the other seed rows use
+function minutesAgo(minutes) {
+  return new Date(Date.now() - minutes * 60_000).toISOString().slice(0, 19).replace('T', ' ')
+}
+
+function seedDemoLine() {
+  const addCredentials = db.prepare(
+    'INSERT INTO user_credentials (id, phone_hash, role) VALUES (?, ?, ?)'
+  )
+  const addProfile = db.prepare(
+    'INSERT INTO user_profiles (user_id, full_name, phone, sms_opt_in) VALUES (?, ?, ?, ?)'
+  )
+  for (const [id, name, phone, smsOptIn] of DEMO_GUESTS) {
+    addCredentials.run(id, hashPassword(phone), 'user')
+    addProfile.run(id, name, phone, smsOptIn)
+  }
+
+  const addEntry = db.prepare(`
+    INSERT INTO queue_entries
+      (id, service_id, user_id, party_size, seating_preference, position, initial_position, type, notes, joined_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  for (const [id, serviceId, userId, partySize, seating, position, initialPosition, type, notes, ago] of DEMO_LINE) {
+    addEntry.run(id, serviceId, userId, partySize, seating, position, initialPosition, type, notes, minutesAgo(ago))
+  }
+
+  // Priya (entry 5) paid to skip 2 spots
+  db.prepare(`
+    INSERT INTO queue_skips (queue_entry_id, label, from_position, to_position, price, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(5, 'Skip 2 spots', 4, 2, 6, minutesAgo(3))
+}
+
 // Only seed a brand new database. After that the data is whatever people have saved.
 const { count } = db.prepare('SELECT COUNT(*) AS count FROM user_credentials').get()
 if (count === 0) {
   seedDatabase()
+  if (!process.env.VITEST) {
+    seedDemoLine()
+  }
 }
 
 // Empties every table and puts the starting data back. Tests call this before each test,
