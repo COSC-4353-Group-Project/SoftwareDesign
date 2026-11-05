@@ -80,7 +80,10 @@ function StatusBadge({ status }) {
 //  Position card
 
 function PositionCard({ entry }) {
-  const wait = estimateWait(entry.position, entry.minutesPerParty);
+  // THU: use the wait estimate returned by backend
+  const wait =
+    entry.estimatedWaitMinutes ??
+    estimateWait(entry.position, entry.minutesPerParty);
   const status = statusForPosition(entry.position);
   const almostReady = status === "almost-ready";
   // how far through the line they are, 0-100
@@ -565,7 +568,7 @@ export default function QueueStatusPage() {
   }
 
   // JUSTIN BACKEND STOOF: still waiting on the server
-  if (loading && !entry) {
+  if (loading) {
     return (
       <div className="queue-page">
         <p className="queue-subtitle">Loading your spot…</p>
@@ -581,7 +584,8 @@ export default function QueueStatusPage() {
         <h1 className="queue-title">Queue status</h1>
         <p className="queue-subtitle">You're not in a queue right now.</p>
         <p className="back-link">
-          <Link to="/join-queues">Join the waitlist</Link> · <Link to="/dashboard">Back to dashboard</Link>
+          <Link to="/join-queues">Join the waitlist</Link> ·{" "}
+          <Link to="/dashboard">Back to dashboard</Link>
         </p>
       </div>
     );

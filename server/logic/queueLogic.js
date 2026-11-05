@@ -404,18 +404,31 @@ export function getActiveQueueEntryForUser(userId) {
 }
 
 // cancel queue
-export function leaveQueue(entryId) {
-  const entry = store.queueEntries.find((item) => item.id === entryId);
 
-  // only active entries can leave
-  if (!entry || entry.status !== "waiting") {
+// cancel queue
+export function leaveQueue(entryId) {
+  // only waiting entries can be cancelled
+  const result = db
+    .prepare(
+      `
+    UPDATE queue_entries
+    SET status = 'cancelled'
+    WHERE id = ? AND status = 'waiting'
+  `,
+    )
+    .run(entryId);
+
+  if (result.changes === 0) {
     return undefined;
   }
-  entry.status = "cancelled";
+
+  // get the updated entry from SQLite
+  const entry = getQueueEntry(entryId);
+
   updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
-  return getQueueEntry(entryId);
+  return entry;
 }
 
 // return all queue entries with current info
