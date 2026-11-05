@@ -9,9 +9,9 @@ import {
   serveNext,
   moveQueueEntry,
   purchaseQueueAdvance,
+  getActiveQueueEntryForUser,
 } from "../logic/queueLogic.js";
 import { validateJoinQueue } from "../validators/queueValidator.js";
-import { store } from "../data/store.js";
 import { requireLogin, requireAdmin } from "../middleware/auth.js";
 
 const router = Router();
@@ -19,7 +19,6 @@ const router = Router();
 // POST /api/queues/join
 // using existing auth
 router.post("/join", requireLogin, (req, res) => {
-  // validate request body
   const errors = validateJoinQueue(req.body);
 
   if (Object.keys(errors).length > 0) {
@@ -29,13 +28,10 @@ router.post("/join", requireLogin, (req, res) => {
     });
   }
 
-  // identify the logged-in user
   const userId = req.user.id;
 
-  // check whether user is already in an active queue
-  const alreadyWaiting = store.queueEntries.some(
-    (entry) => entry.userId === userId && entry.status === "waiting",
-  );
+  // check active entries in SQLite
+  const alreadyWaiting = getActiveQueueEntryForUser(userId);
 
   if (alreadyWaiting) {
     return res.status(409).json({
@@ -43,16 +39,33 @@ router.post("/join", requireLogin, (req, res) => {
     });
   }
 
-  // create queue entry
-  const entry = joinQueue(
-    userId,
-    req.body.serviceId,
-    req.body.partySize,
-    req.body.seatingPreference,
-  );
+  try {
+    const entry = joinQueue(
+      userId,
+      req.body.serviceId,
+      req.body.partySize,
+      req.body.seatingPreference,
+    );
 
-  // return newly created entry
-  res.status(201).json(entry);
+    if (!entry) {
+      return res.status(409).json({
+        error: "This queue is not available.",
+      });
+    }
+
+    return res.status(201).json(entry);
+  } catch (error) {
+    // unique index  prevents duplicate active joins
+    if (
+      error.message?.includes("UNIQUE constraint failed: queue_entries.user_id")
+    ) {
+      return res.status(409).json({
+        error: "You are already waiting in a queue.",
+      });
+    }
+
+    throw error;
+  }
 });
 
 // GET /api/queues/summary/:serviceId
@@ -78,17 +91,19 @@ router.get("/summary/:serviceId", (req, res) => {
 
 // JUSTIN BACKEND STOOF: GET /api/queues/me   the logged-in user's current spot in line (Queue Status page).
 // Has to stay ABOVE "/:entryId", otherwise Express would treat "me" as an entry id.
-router.get("/me", requireLogin, (req, res) => {
-  const mine = store.queueEntries.find(
-    (entry) => entry.userId === req.user.id && entry.status === "waiting",
-  );
 
-  if (!mine) {
-    return res.status(404).json({ error: "You're not in a queue right now." });
+//
+// THU: logged-in customer's current queue entry for Queue Status.
+router.get("/me", requireLogin, (req, res) => {
+  const entry = getActiveQueueEntryForUser(req.user.id);
+
+  if (!entry) {
+    return res.status(404).json({
+      error: "You're not in a queue right now.",
+    });
   }
 
-  // same info the page gets from GET /api/queues/:entryId (position, wait, service name)
-  res.json(getQueueEntry(mine.id));
+  return res.json(entry);
 });
 
 // GET /api/queues/:entryId
