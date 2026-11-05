@@ -89,9 +89,16 @@ function PositionCard({ entry }) {
   // how far through the line they are, 0-100
   const progress =
     entry.initialPosition > 0
-      ? Math.round(
-          ((entry.initialPosition - entry.position) / entry.initialPosition) *
+      ? Math.max(
+          0,
+          Math.min(
             100,
+            Math.round(
+              ((entry.initialPosition - entry.position) /
+                entry.initialPosition) *
+                100,
+            ),
+          ),
         )
       : 0;
 

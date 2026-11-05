@@ -25,7 +25,7 @@ beforeEach(() => {
   resetDatabase();
 });
 
-describe("Phase 3 - SQLite queue persistence", () => {
+describe("SQLite queue persistence", () => {
   test("joins a service queue and saves the entry in SQLite", () => {
     const entry = joinQueue(2, 1, 2, "Dine-in");
 
@@ -204,7 +204,7 @@ describe("Phase 3 - SQLite queue persistence", () => {
   });
 });
 
-describe("Phase 3 - Join Queue API", () => {
+describe("Join Queue API", () => {
   test("joins through the API and retrieves the current entry", async () => {
     const token = loginUser("Justin Hendrix", "7135550123").token;
 

@@ -166,10 +166,16 @@ export function listQueue(serviceId) {
   return rows.map(toQueueEntry);
 }
 
-// save updated order within a queue
-function updateQueueOrder(orderedEntries) {
+// save current waiting order in SQLite
+function saveQueueOrder(orderedEntries) {
+  const update = db.prepare(`
+    UPDATE queue_entries
+    SET position = ?
+    WHERE id = ? AND status = 'waiting'
+  `);
+
   orderedEntries.forEach((entry, index) => {
-    entry.queueOrder = index + 1;
+    update.run(index + 1, entry.id);
   });
 }
 
@@ -180,99 +186,159 @@ function updateQueueNotifications(serviceId) {
 
 // enable moviing a waiting party up or down
 export function moveQueueEntry(entryId, direction) {
-  const entry = store.queueEntries.find(
-    (item) => item.id === entryId && item.status === "waiting",
-  );
-
-  if (!entry || ![-1, 1].includes(direction)) {
+  if (![-1, 1].includes(direction)) {
     return undefined;
   }
 
-  const queue = listQueue(entry.serviceId);
-  const currentIndex = queue.findIndex((item) => item.id === entryId);
-  const newIndex = currentIndex + direction;
+  // reorder and save positions together
+  db.exec("BEGIN IMMEDIATE");
 
-  // no wrapping
-  if (currentIndex < 0 || newIndex < 0 || newIndex >= queue.length) {
-    return undefined;
+  let serviceId;
+
+  try {
+    const entry = db
+      .prepare(
+        `
+      SELECT id, service_id
+      FROM queue_entries
+      WHERE id = ? AND status = 'waiting'
+    `,
+      )
+      .get(entryId);
+
+    if (!entry) {
+      db.exec("ROLLBACK");
+      return undefined;
+    }
+
+    serviceId = entry.service_id;
+
+    const queue = listQueue(serviceId);
+    const currentIndex = queue.findIndex((item) => item.id === entryId);
+
+    const newIndex = currentIndex + direction;
+
+    // no move beyond the first or last position
+    if (currentIndex < 0 || newIndex < 0 || newIndex >= queue.length) {
+      db.exec("ROLLBACK");
+      return undefined;
+    }
+
+    // fetty swap
+    [queue[currentIndex], queue[newIndex]] = [
+      queue[newIndex],
+      queue[currentIndex],
+    ];
+
+    saveQueueOrder(queue);
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
   }
 
-  [queue[currentIndex], queue[newIndex]] = [
-    queue[newIndex],
-    queue[currentIndex],
-  ];
-
-  updateQueueOrder(queue);
-  updateQueueNotifications(entry.serviceId);
+  updateQueueNotifications(serviceId);
 
   return getQueueEntry(entryId);
 }
 
 // paying bribe to move up in queue
 export function purchaseQueueAdvance(entryId, mode, spots) {
-  const entry = store.queueEntries.find(
-    (item) => item.id === entryId && item.status === "waiting",
-  );
+  let serviceId;
 
-  if (!entry) {
-    return undefined;
-  }
+  // save the purchase and queue movement together
+  db.exec("BEGIN IMMEDIATE");
 
-  const queue = listQueue(entry.serviceId);
-  const currentIndex = queue.findIndex((item) => item.id === entryId);
+  try {
+    // find waiting entry in SQLite
+    const saved = db
+      .prepare(
+        `
+      SELECT id, service_id
+      FROM queue_entries
+      WHERE id = ? AND status = 'waiting'
+    `,
+      )
+      .get(entryId);
 
-  // already first in line
-  if (currentIndex <= 0) {
-    return undefined;
-  }
-
-  const from = currentIndex + 1;
-  let to;
-  let price;
-  let label;
-
-  if (mode === "front") {
-    to = 1;
-    price = FRONT_OF_LINE_PRICE;
-    label = "Front of line";
-  } else if (mode === "spots") {
-    const maxSpots = Math.min(
-      from - 2,
-      Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1,
-    );
-
-    if (!Number.isInteger(spots) || spots < 1 || spots > maxSpots) {
+    if (!saved) {
+      db.exec("ROLLBACK");
       return undefined;
     }
 
-    to = from - spots;
-    price = spots * PRICE_PER_SPOT;
-    label = `Skip ${spots} spot${spots === 1 ? "" : "s"}`;
-  } else {
-    return undefined;
+    serviceId = saved.service_id;
+    const queue = listQueue(serviceId);
+    const currentIndex = queue.findIndex((item) => item.id === entryId);
+
+    // already first or not in waiting list
+    if (currentIndex <= 0) {
+      db.exec("ROLLBACK");
+      return undefined;
+    }
+
+    const from = currentIndex + 1;
+    let to;
+    let price;
+    let label;
+
+    if (mode === "front") {
+      to = 1;
+      price = FRONT_OF_LINE_PRICE;
+      label = "Front of line";
+    } else if (mode === "spots") {
+      // regular skips cannot reach #1 spot and must cost less than front of line
+      const maxSpots = Math.min(
+        from - 2,
+        Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1,
+      );
+
+      if (!Number.isInteger(spots) || spots < 1 || spots > maxSpots) {
+        db.exec("ROLLBACK");
+        return undefined;
+      }
+
+      to = from - spots;
+      price = spots * PRICE_PER_SPOT;
+      label = `Skip ${spots} spot${spots === 1 ? "" : "s"}`;
+    } else {
+      db.exec("ROLLBACK");
+      return undefined;
+    }
+
+    // move customer to the purchased position
+    const [movedEntry] = queue.splice(currentIndex, 1);
+    queue.splice(to - 1, 0, movedEntry);
+
+    saveQueueOrder(queue);
+
+    // record in db
+    db.prepare(
+      `
+      INSERT INTO queue_skips (
+        queue_entry_id,
+        label,
+        from_position,
+        to_position,
+        price,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `,
+    ).run(entryId, label, from, to, price, new Date().toISOString());
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
   }
 
-  // move entry to its purchased position
-  const [movedEntry] = queue.splice(currentIndex, 1);
-  queue.splice(to - 1, 0, movedEntry);
-
-  updateQueueOrder(queue);
-
-  // record keeping purchase
-  entry.skips ??= [];
-
-  entry.skips.push({
-    label,
-    from,
-    to,
-    price,
-    at: new Date().toISOString(),
-  });
+  const entry = getQueueEntry(entryId);
 
   updateQueueHistory(entry);
-  updateQueueNotifications(entry.serviceId);
+  updateQueueNotifications(serviceId);
 
-  return getQueueEntry(entryId);
+  return entry;
 }
 
 // return current position of a queue entry
@@ -404,8 +470,6 @@ export function getActiveQueueEntryForUser(userId) {
 }
 
 // cancel queue
-
-// cancel queue
 export function leaveQueue(entryId) {
   // only waiting entries can be cancelled
   const result = db
@@ -433,47 +497,74 @@ export function leaveQueue(entryId) {
 
 // return all queue entries with current info
 export function getAllQueueEntries() {
-  return store.queueEntries.map((entry) => {
-    // JUSTIN: users are in the database now (authLogic), not store.users
-    const user = getUserById(entry.userId);
+  // read queue entries from SQLite
+  // waiting entries appear first, completed entries stay for Admin Queues
+  const rows = db
+    .prepare(
+      `
+    SELECT id, user_id
+    FROM queue_entries
+    ORDER BY
+      CASE WHEN status = 'waiting' THEN 0 ELSE 1 END,
+      service_id,
+      position,
+      id
+  `,
+    )
+    .all();
+
+  return rows.map((row) => {
+    const entry = getQueueEntry(row.id);
+    const user = getUserById(row.user_id);
 
     return {
-      ...getQueueEntry(entry.id),
-      guestName: user?.name ?? `Guest #${entry.userId}`,
+      ...entry,
+      guestName: user?.name ?? `Guest #${row.user_id}`,
     };
   });
 }
 
 // mark entry as served
 export function serveQueueEntry(entryId) {
-  const entry = store.queueEntries.find(
-    (item) => item.id === entryId && item.status === "waiting",
-  );
+  // update saved queue entry
+  const result = db
+    .prepare(
+      `
+    UPDATE queue_entries
+    SET status = 'served'
+    WHERE id = ? AND status = 'waiting'
+  `,
+    )
+    .run(entryId);
 
-  if (!entry) {
+  if (result.changes === 0) {
     return undefined;
   }
 
-  entry.status = "served";
+  const entry = getQueueEntry(entryId);
+
   updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
-  return getQueueEntry(entryId);
+  return entry;
 }
 
 // serve earliest waiting party
 export function serveNext() {
-  const serviceIds = [
-    ...new Set(
-      store.queueEntries
-        .filter((entry) => entry.status === "waiting")
-        .map((entry) => entry.serviceId),
-    ),
-  ];
+  // find services with waiting entries in SQLite
+  const services = db
+    .prepare(
+      `
+    SELECT DISTINCT service_id
+    FROM queue_entries
+    WHERE status = 'waiting'
+  `,
+    )
+    .all();
 
-  // only first party
-  const nextEntry = serviceIds
-    .map((serviceId) => listQueue(serviceId)[0])
+  // find the first waiting party from each service queue
+  const nextEntry = services
+    .map(({ service_id }) => listQueue(service_id)[0])
     .filter(Boolean)
     .sort((a, b) => a.id - b.id)[0];
 
