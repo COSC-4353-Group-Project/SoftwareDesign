@@ -138,10 +138,10 @@ function UserDashboard() {
                   </p>
                  <div className="wait-card-stats">
                    <span className="wait-stat">
-                     <Users size={14} /> {item.inLine}
+                     <Users size={14} /> {item.inLine} in line
                    </span>
                    <span className="wait-stat">
-                     <Clock size={14} /> {item.duration}
+                     <Clock size={14} /> {item.duration} mins
                    </span>
                  </div>
                 </div>

@@ -129,3 +129,15 @@ BEFORE DELETE ON services
 BEGIN
   DELETE FROM queues WHERE service_id = OLD.id;
 END;
+
+-- Anaya: test table! what's shown on the user dashboard should reference the actual services table but i'll get to that
+
+CREATE TABLE IF NOT EXISTS userdash_info (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(name) BETWEEN 1 AND 100),
+  description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
+  duration_minutes INTEGER NOT NULL CHECK (duration_minutes BETWEEN 1 AND 240),
+  is_open INTEGER NOT NULL DEFAULT 1 CHECK (is_open IN (0, 1)),
+  priority TEXT NOT NULL CHECK (priority IN ('high', 'medium', 'low')),
+  in_line INTEGER NOT NULL DEFAULT 0
+  ) STRICT;
