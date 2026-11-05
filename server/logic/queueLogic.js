@@ -1,3 +1,4 @@
+import { db } from "../data/db.js";
 import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
@@ -7,6 +8,24 @@ import { getUserById } from "./authLogic.js";
 
 const PRICE_PER_SPOT = 3;
 const FRONT_OF_LINE_PRICE = 20;
+
+// THU: convert sql queue entry to proper format
+function toQueueEntry(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    serviceId: row.service_id,
+    partySize: row.party_size,
+    seatingPreference: row.seating_preference,
+    status: row.status,
+    initialPosition: row.initial_position,
+    queueOrder: row.position,
+    joinedAt: row.joined_at,
+    type: row.type,
+    notes: row.notes,
+    skips: [],
+  };
+}
 
 // create a record when customer joins queue
 function recordQueueHistory(entry, serviceName) {
@@ -51,39 +70,78 @@ function updateQueueHistory(entry) {
 export function joinQueue(userId, serviceId, partySize, seatingPreference) {
   const service = getServiceById(serviceId);
 
-  // number of waiting parties for a service
-  const partiesAhead = listQueue(serviceId).length;
-  const position = partiesAhead + 1;
-  const queueOrder =
-    Math.max(
-      0,
-      ...listQueue(serviceId).map((entry) => entry.queueOrder ?? entry.id),
-    ) + 1;
+  const queue = db
+    .prepare(
+      `
+    SELECT id, status
+    FROM queues
+    WHERE service_id = ?
+  `,
+    )
+    .get(serviceId);
 
-  // create unique entry ID (and make sure it's in order)
-  const nextId =
-    Math.max(0, ...store.queueEntries.map((entry) => entry.id)) + 1;
+  if (!service || !service.isOpen || !queue || queue.status !== "open") {
+    return undefined;
+  }
 
-  // queue entry
-  const entry = {
-    id: nextId,
-    userId,
-    serviceId,
-    partySize,
-    seatingPreference,
-    status: "waiting",
-    initialPosition: position,
-    queueOrder,
-    joinedAt: new Date().toISOString(),
-    type: "walk-in",
-    notes: "",
-    skips: [],
-  };
+  let entryId;
 
-  // store the entry and return the entry with information needed by QueueStatusPage
-  store.queueEntries.push(entry);
+  // save new entry and position together
+  db.exec("BEGIN IMMEDIATE");
 
-  const joinedEntry = getQueueEntry(entry.id);
+  try {
+    const waiting = db
+      .prepare(
+        `
+      SELECT
+        COUNT(*) AS count,
+        COALESCE(MAX(position), 0) AS last_order
+      FROM queue_entries
+      WHERE service_id = ? AND status = 'waiting'
+    `,
+      )
+      .get(serviceId);
+
+    const position = waiting.count + 1;
+    const queueOrder = waiting.last_order + 1;
+
+    const result = db
+      .prepare(
+        `
+      INSERT INTO queue_entries (
+        queue_id,
+        service_id,
+        user_id,
+        party_size,
+        seating_preference,
+        position,
+        initial_position,
+        status,
+        joined_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'waiting', ?)
+    `,
+      )
+      .run(
+        queue.id,
+        serviceId,
+        userId,
+        partySize,
+        seatingPreference,
+        queueOrder,
+        position,
+        new Date().toISOString(),
+      );
+
+    entryId = Number(result.lastInsertRowid);
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+
+  const joinedEntry = getQueueEntry(entryId);
 
   recordQueueHistory(joinedEntry, service.name);
   notifyQueueJoined(joinedEntry, service.name);
@@ -94,13 +152,18 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
 
 // list all waiting entries for a service in order
 export function listQueue(serviceId) {
-  return store.queueEntries
-    .filter(
-      (entry) => entry.serviceId === serviceId && entry.status === "waiting",
+  const rows = db
+    .prepare(
+      `
+    SELECT *
+    FROM queue_entries
+    WHERE service_id = ? AND status = 'waiting'
+    ORDER BY position ASC, id ASC
+  `,
     )
-    .sort(
-      (a, b) => (a.queueOrder ?? a.id) - (b.queueOrder ?? b.id) || a.id - b.id,
-    );
+    .all(serviceId);
+
+  return rows.map(toQueueEntry);
 }
 
 // save updated order within a queue
@@ -214,27 +277,74 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
 
 // return current position of a queue entry
 export function getQueuePosition(entryId) {
-  const entry = store.queueEntries.find((item) => item.id === entryId);
+  const entry = db
+    .prepare(
+      `
+    SELECT id, service_id, position, status
+    FROM queue_entries
+    WHERE id = ?
+  `,
+    )
+    .get(entryId);
 
   if (!entry || entry.status !== "waiting") {
     return 0;
   }
 
-  const queue = listQueue(entry.serviceId);
+  const { count } = db
+    .prepare(
+      `
+    SELECT COUNT(*) AS count
+    FROM queue_entries
+    WHERE service_id = ?
+      AND status = 'waiting'
+      AND (
+        position < ?
+        OR (position = ? AND id < ?)
+      )
+  `,
+    )
+    .get(entry.service_id, entry.position, entry.position, entry.id);
 
-  return queue.findIndex((item) => item.id === entryId) + 1;
+  return count + 1;
 }
 
 // return an entry with its info
 export function getQueueEntry(entryId) {
-  const entry = store.queueEntries.find((item) => item.id === entryId);
+  const row = db
+    .prepare(
+      `
+    SELECT *
+    FROM queue_entries
+    WHERE id = ?
+  `,
+    )
+    .get(entryId);
 
-  if (!entry) {
+  if (!row) {
     return undefined;
   }
 
+  const entry = toQueueEntry(row);
   const service = getServiceById(entry.serviceId);
   const position = getQueuePosition(entryId);
+
+  // include existing purchases in the API response
+  entry.skips = db
+    .prepare(
+      `
+    SELECT
+      label,
+      from_position AS "from",
+      to_position AS "to",
+      price,
+      created_at AS "at"
+    FROM queue_skips
+    WHERE queue_entry_id = ?
+    ORDER BY id ASC
+  `,
+    )
+    .all(entryId);
 
   return {
     ...entry,
@@ -255,16 +365,42 @@ export function getQueueSummary(serviceId) {
     return undefined;
   }
 
+  const queue = db
+    .prepare(
+      `
+    SELECT status
+    FROM queues
+    WHERE service_id = ?
+  `,
+    )
+    .get(serviceId);
+
   const partiesAhead = listQueue(serviceId).length;
 
   return {
     serviceId: service.id,
     serviceName: service.name,
     description: service.description,
-    isOpen: service.isOpen,
+    isOpen: service.isOpen && queue?.status === "open",
     partiesAhead,
     estimatedWaitMinutes: estimateWaitForService(serviceId, partiesAhead + 1),
   };
+}
+
+// find customer's current waiting entry
+export function getActiveQueueEntryForUser(userId) {
+  const row = db
+    .prepare(
+      `
+    SELECT id
+    FROM queue_entries
+    WHERE user_id = ? AND status = 'waiting'
+    LIMIT 1
+  `,
+    )
+    .get(userId);
+
+  return row ? getQueueEntry(row.id) : undefined;
 }
 
 // cancel queue
