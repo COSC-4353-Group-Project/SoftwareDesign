@@ -193,6 +193,7 @@ export function resetDatabase() {
   try {
     db.exec(`
       DELETE FROM sessions;
+      DELETE FROM notifications;
       DELETE FROM queue_skips;
       DELETE FROM queue_entries;
       DELETE FROM queues;

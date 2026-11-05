@@ -57,6 +57,7 @@ function seedHistory() {
 }
 
 // Accounts and logins moved to the database in A4 (user_credentials, user_profiles, sessions).
+// Notifications moved too (notifications table).
 
 // Anaya: deals with the live wait times servies on the user dashboard
 function seedUserDashboard() {
@@ -131,7 +132,6 @@ function seedSkipDashboard() {
 export const store = {
   services: seedServices(),
   queueEntries: [],
-  notifications: [],
   history: seedHistory(),
   userDash: seedUserDashboard(),
   adminDashItem: seedAdminDashboard(),
@@ -143,6 +143,5 @@ export const store = {
 export function resetStore() {
   store.services = seedServices()
   store.queueEntries = []
-  store.notifications = []
   store.history = seedHistory()
 }
