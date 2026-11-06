@@ -1,5 +1,4 @@
 import { db } from "../data/db.js";
-import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
 import {
@@ -9,7 +8,6 @@ import {
   notifyTableReady,
   countPassedBy,
 } from "./notificationLogic.js";
-import { createHistory, updateHistory } from "./historyLogic.js";
 import { getUserById } from "./authLogic.js";
 
 // JUSTIN: bribe prices depend on the service's priority level (set on AdminServicesPage),
@@ -44,44 +42,11 @@ function toQueueEntry(row) {
   };
 }
 
-// create a record when customer joins queue
-function recordQueueHistory(entry, serviceName) {
-  const history = createHistory({
-    service: serviceName,
-    date: entry.joinedAt.slice(0, 10),
-    bribe: 0,
-    status: "Entered",
-  });
-
-  history.userId = entry.userId;
-  history.queueEntryId = entry.id;
-}
-
-// ppdate record after a queue change
-function updateQueueHistory(entry) {
-  const history = store.history.find((item) => item.queueEntryId === entry.id);
-
-  if (!history) return;
-
-  const status =
-    entry.status === "cancelled"
-      ? "Canceled"
-      : entry.status === "served"
-        ? "Done"
-        : "Entered";
-
-  const bribe = (entry.skips ?? []).reduce(
-    (total, skip) => total + skip.price,
-    0,
-  );
-
-  updateHistory(history.id, {
-    service: history.service,
-    date: history.date,
-    bribe,
-    status,
-  });
-}
+// BUG FIX (Justin, 11-06): recordQueueHistory and updateQueueHistory are gone.
+// They called createHistory/updateHistory, which now try to INSERT/UPDATE columns queue_entries
+// doesn't have (service, date, bribe), so joining a queue crashed with a SQL error.
+// History doesn't need to be written anymore: queue_history in schema.sql is a view over
+// queue_entries + queue_skips, so every join, serve, cancel and bribe shows up there by itself.
 
 // adding a guest to a queue
 export function joinQueue(userId, serviceId, partySize, seatingPreference) {
@@ -160,7 +125,6 @@ export function joinQueue(userId, serviceId, partySize, seatingPreference) {
 
   const joinedEntry = getQueueEntry(entryId);
 
-  recordQueueHistory(joinedEntry, service.name);
   notifyQueueJoined(joinedEntry, service.name);
   updateQueueNotifications(serviceId);
 
@@ -366,7 +330,6 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
     notifyPassedBy(passed, newPosition);
   });
 
-  updateQueueHistory(entry);
   updateQueueNotifications(serviceId);
 
   return entry;
@@ -524,7 +487,6 @@ export function leaveQueue(entryId) {
   // get the updated entry from SQLite
   const entry = getQueueEntry(entryId);
 
-  updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
   return entry;
@@ -579,7 +541,6 @@ export function serveQueueEntry(entryId) {
   const entry = getQueueEntry(entryId);
 
   notifyTableReady(entry, entry.serviceName);
-  updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 
   return entry;

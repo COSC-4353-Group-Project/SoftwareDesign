@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { db, resetDatabase } from "../data/db.js";
-import { resetStore, store } from "../data/store.js";
+import { resetStore } from "../data/store.js";
+import { getHistoryById } from "../logic/historyLogic.js";
+
+// BUG FIX (Justin, 11-06): the History checks used to read store.history, which the queue doesn't
+// write to anymore. They read the queue_history view now (its id = the queue entry id), and the
+// statuses are the queue's own: waiting / served / cancelled (not Entered / Done / Canceled).
 import {
   joinQueue,
   listQueue,
@@ -58,10 +63,10 @@ describe("joining and retrieving queues", () => {
     expect(entry.skips).toEqual([]);
 
     expect(
-      store.history.find((h) => h.queueEntryId === entry.id),
+      getHistoryById(entry.id),
     ).toMatchObject({
       userId: 2,
-      status: "Entered",
+      status: "waiting",
       bribe: 0,
     });
   });
@@ -121,8 +126,8 @@ describe("leaving and serving", () => {
     expect(getQueuePosition(second.id)).toBe(1);
 
     expect(
-      store.history.find((h) => h.queueEntryId === first.id).status,
-    ).toBe("Canceled");
+      getHistoryById(first.id).status,
+    ).toBe("cancelled");
 
     expect(leaveQueue(first.id)).toBeUndefined();
     expect(leaveQueue(999)).toBeUndefined();
@@ -137,8 +142,8 @@ describe("leaving and serving", () => {
     });
 
     expect(
-      store.history.find((h) => h.queueEntryId === entry.id).status,
-    ).toBe("Done");
+      getHistoryById(entry.id).status,
+    ).toBe("served");
 
     expect(serveQueueEntry(entry.id)).toBeUndefined();
     expect(serveQueueEntry(999)).toBeUndefined();
@@ -194,7 +199,7 @@ describe("admin reorder and BribeSmart", () => {
     });
 
     expect(
-      store.history.find((h) => h.queueEntryId === third.id).bribe,
+      getHistoryById(third.id).bribe,
     ).toBe(6);
   });
 
@@ -216,10 +221,10 @@ describe("admin reorder and BribeSmart", () => {
     expect(serveNext().id).toBe(third.id);
 
     expect(
-      store.history.find((h) => h.queueEntryId === third.id),
+      getHistoryById(third.id),
     ).toMatchObject({
       bribe: 40,
-      status: "Done",
+      status: "served",
     });
   });
 

@@ -235,7 +235,11 @@ export function resetDatabase() {
       DELETE FROM services;
       DELETE FROM user_profiles;
       DELETE FROM user_credentials;
+      DELETE FROM admin_dash;
     `)
+    // BUG FIX (Justin, 11-06): admin_dash wasn't emptied here, so the second reset tried to
+    // insert its seed rows (ids 1-4) again and failed with "UNIQUE constraint failed: admin_dash.id".
+    // That broke every test that resets before each test.
 
     seedDatabase()
     linkServiceQueues()
