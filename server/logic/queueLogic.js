@@ -2,7 +2,13 @@ import { db } from "../data/db.js";
 import { store } from "../data/store.js";
 import { getServiceById } from "./serviceLogic.js";
 import { estimateWaitForService } from "./waitTimeLogic.js";
-import { notifyQueueJoined, notifyAlmostReady } from "./notificationLogic.js";
+import {
+  notifyQueueJoined,
+  notifyAlmostReady,
+  notifyPassedBy,
+  notifyTableReady,
+  countPassedBy,
+} from "./notificationLogic.js";
 import { createHistory, updateHistory } from "./historyLogic.js";
 import { getUserById } from "./authLogic.js";
 
@@ -257,6 +263,7 @@ export function moveQueueEntry(entryId, direction) {
 // paying bribe to move up in queue
 export function purchaseQueueAdvance(entryId, mode, spots) {
   let serviceId;
+  let passedEntries = [];
 
   // save the purchase and queue movement together
   db.exec("BEGIN IMMEDIATE");
@@ -318,6 +325,13 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
       return undefined;
     }
 
+    // JUSTIN: everyone from the new spot up to just ahead of the buyer gets skipped over.
+    // slice copies them out before the splice below changes the array.
+    // each one moves back one spot: the first was at #to and is now #(to + 1), and so on
+    passedEntries = queue
+      .slice(to - 1, currentIndex)
+      .map((passed, index) => ({ passed, newPosition: to + index + 1 }));
+
     // move customer to the purchased position
     const [movedEntry] = queue.splice(currentIndex, 1);
     queue.splice(to - 1, 0, movedEntry);
@@ -346,6 +360,11 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
   }
 
   const entry = getQueueEntry(entryId);
+
+  // tell everyone who got skipped (after COMMIT, same as the other notifications)
+  passedEntries.forEach(({ passed, newPosition }) => {
+    notifyPassedBy(passed, newPosition);
+  });
 
   updateQueueHistory(entry);
   updateQueueNotifications(serviceId);
@@ -434,6 +453,8 @@ export function getQueueEntry(entryId) {
     minutesPerParty: service?.duration ?? 0,
     // what bribing costs in this line, for the "Move up in line" panel
     skipPrices: getSkipPrices(service?.priority),
+    // how many paying skippers jumped ahead of this party, for AdminQueuesPage
+    passedBy: countPassedBy(entryId),
   };
 }
 
@@ -557,6 +578,7 @@ export function serveQueueEntry(entryId) {
 
   const entry = getQueueEntry(entryId);
 
+  notifyTableReady(entry, entry.serviceName);
   updateQueueHistory(entry);
   updateQueueNotifications(entry.serviceId);
 

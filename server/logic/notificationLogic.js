@@ -12,6 +12,7 @@ function toNotification(row) {
     type: row.type,
     title: row.title,
     body: row.body,
+    isRead: row.is_read === 1,
     createdAt: row.created_at,
   };
 }
@@ -73,10 +74,52 @@ export function notifyAlmostReady(queue) {
   });
 }
 
+// notify when someone pays to skip ahead of them. newPosition = their spot after getting passed
+export function notifyPassedBy(entry, newPosition) {
+  return createNotification(
+    entry.userId,
+    entry.id,
+    "passed_by",
+    "Someone paid to skip ahead of you",
+    `You're now #${newPosition} in line`,
+  );
+}
+
+// notify when an admin serves them
+export function notifyTableReady(entry, serviceName) {
+  return createNotification(
+    entry.userId,
+    entry.id,
+    "table_ready",
+    "Your table is ready",
+    `${serviceName} · head to the host stand`,
+  );
+}
+
 // newest first
 export function listNotifications(userId) {
   const rows = db
     .prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC")
     .all(userId);
   return rows.map(toNotification);
+}
+
+// called when the user opens the bell, so the red count goes back to 0
+export function markNotificationsRead(userId) {
+  db.prepare(
+    "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
+  ).run(userId);
+}
+
+// how many times this entry got skipped by someone paying ("Passed by N skippers" on AdminQueuesPage)
+export function countPassedBy(entryId) {
+  const { count } = db
+    .prepare(
+      `
+    SELECT COUNT(*) AS count FROM notifications
+    WHERE queue_entry_id = ? AND type = 'passed_by'
+  `,
+    )
+    .get(entryId);
+  return count;
 }

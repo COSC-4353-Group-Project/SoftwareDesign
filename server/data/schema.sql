@@ -91,17 +91,21 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) STRICT;
 
--- the "Recent notifications" list on the user dashboard (store.notifications before)
--- 'joined' = they got in line, 'almost_ready' = they reached the top 3
+-- the bell in the top bar + "Recent notifications" on the user dashboard (store.notifications before)
+-- 'joined' = they got in line, 'almost_ready' = they reached the top 3,
+-- 'passed_by' = someone paid to skip ahead of them, 'table_ready' = an admin served them
+-- is_read = 1 once they've opened the bell, so the red count only counts new ones
 -- created_at comes from JS new Date().toISOString() instead of CURRENT_TIMESTAMP, because that one
 -- has no Z on the end and the browser would read it as local time instead of UTC
+-- (db.js rebuilds an older copy of this table that's missing is_read, see the JUSTIN comment there)
 CREATE TABLE IF NOT EXISTS notifications (
   id INTEGER PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES user_credentials(id) ON DELETE CASCADE,
   queue_entry_id INTEGER NOT NULL REFERENCES queue_entries(id),
-  type TEXT NOT NULL CHECK (type IN ('joined', 'almost_ready')),
+  type TEXT NOT NULL CHECK (type IN ('joined', 'almost_ready', 'passed_by', 'table_ready')),
   title TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 100),
   body TEXT NOT NULL CHECK (length(body) BETWEEN 1 AND 200),
+  is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
   created_at TEXT NOT NULL
 ) STRICT;
 
