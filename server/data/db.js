@@ -130,15 +130,15 @@ function seedDatabase() {
   `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
 
   // Anaya: testing for proper connection to frontend
-  // const addUserinfo = db.prepare(`
-  //   INSERT INTO userdash_info (id, name, description, duration_minutes, is_open, priority, in_line)
-  //   VALUES (?, ?, ?, ?, ?, ?, ?)
-  //   `)
+  const addAdmininfo = db.prepare(`
+    INSERT INTO admin_dash (id, name, statistic, description, isSkip)
+    VALUES (?, ?, ?, ?, ?)`)
 
-  //   addUserinfo.run(1, 'Dine-in · Party of 1–2', 'Standard table seating for dates.', 60, 1, 'high', 9)
-  //   addUserinfo.run(2, 'Dine-in · Party of 3–6', 'Larger tables and booths. Longer Wait-Time.', 135, 1, 'medium', 19)
-  //   addUserinfo.run(3, 'Bar Seating', 'First-come bar stools. Bartender Service', 24, 1, 'low', 5)
-  //   addUserinfo.run(4, 'Patio', 'Outdoor tables. Closed when it rains.', 40, 0, 'low', 0)
+  addAdmininfo.run(1, 'Parties Waiting', 28, '79 guests total', 0)
+  addAdmininfo.run(2, 'Open Services', 3, 'Accepting new guests', 0)
+  addAdmininfo.run(3, 'Seated Today', 420, 'Across All Services', 0)
+  addAdmininfo.run(4, 'Skip Revenue Today', 69, '7 guests paid to skip', 1)
+
 }
 
 // A line of made up guests waiting right now, so the queue pages have people in them.

@@ -168,4 +168,14 @@ SELECT
     services.description AS description,
     services.duration_minutes AS duration_minutes,
     services.is_open AS is_open
-FROM services
+FROM services;
+
+-- first iteration of the admin dashboard table
+
+CREATE TABLE IF NOT EXISTS admin_dash (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(name) BETWEEN 1 AND 100),
+    statistic INTEGER,
+    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
+    isSkip INTEGER NOT NULL DEFAULT 0 CHECK (isSkip IN (0, 1))
+) STRICT;
