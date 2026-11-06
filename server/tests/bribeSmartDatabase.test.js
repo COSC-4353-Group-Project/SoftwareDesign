@@ -10,6 +10,7 @@ import {
   getQueueEntry,
   purchaseQueueAdvance,
   serveNext,
+  getSkipPrices,
 } from "../logic/queueLogic.js";
 
 beforeEach(() => {
@@ -37,7 +38,7 @@ function createThreePersonQueue() {
 }
 
 describe("BribeSmart database persistence", () => {
-  test("skips one spot for $3 and saves the purchase", () => {
+  test("skips one spot for $6 (high priority) and saves the purchase", () => {
     const { first, second, third } = createThreePersonQueue();
 
     const result = purchaseQueueAdvance(third.id, "spots", 1);
@@ -48,7 +49,7 @@ describe("BribeSmart database persistence", () => {
         label: "Skip 1 spot",
         from: 3,
         to: 2,
-        price: 3,
+        price: 6,
       }),
     ]);
 
@@ -68,11 +69,11 @@ describe("BribeSmart database persistence", () => {
       queue_entry_id: third.id,
       from_position: 3,
       to_position: 2,
-      price: 3,
+      price: 6,
     });
   });
 
-  test("moves to front for $20 and persists the ordering", () => {
+  test("moves to front for $40 (high priority) and persists the ordering", () => {
     const { first, second, third } = createThreePersonQueue();
 
     const result = purchaseQueueAdvance(third.id, "front");
@@ -82,7 +83,7 @@ describe("BribeSmart database persistence", () => {
       label: "Front of line",
       from: 3,
       to: 1,
-      price: 20,
+      price: 40,
     });
 
     expect(listQueue(1).map((entry) => entry.id)).toEqual([
@@ -107,7 +108,7 @@ describe("BribeSmart database persistence", () => {
     const saved = getQueueEntry(third.id);
 
     expect(saved.skips).toHaveLength(2);
-    expect(saved.skips.map((skip) => skip.price)).toEqual([3, 20]);
+    expect(saved.skips.map((skip) => skip.price)).toEqual([6, 40]);
 
     const purchases = db.prepare(`
       SELECT COUNT(*) AS count
@@ -222,7 +223,7 @@ describe("BribeSmart API", () => {
 
     expect(purchased.status).toBe(200);
     expect(purchased.body.position).toBe(1);
-    expect(purchased.body.skips[0].price).toBe(20);
+    expect(purchased.body.skips[0].price).toBe(40);
 
     const saved = db.prepare(`
       SELECT COUNT(*) AS count
@@ -231,5 +232,48 @@ describe("BribeSmart API", () => {
     `).get(second.id);
 
     expect(saved.count).toBe(1);
+  });
+});
+// JUSTIN: bribe prices depend on the service's priority (SKIP_PRICES in queueLogic.js).
+// Service 1 is high (the tests above), service 3 (Bar Seating) is medium.
+describe("BribeSmart prices by service priority", () => {
+  function createBarQueue() {
+    const anaya = addUser("Anaya", "7135550999");
+    const vincent = addUser("Vincent", "7135550888");
+
+    joinQueue(2, 3, 1, "Bar Seating");
+    joinQueue(anaya.id, 3, 1, "Bar Seating");
+    return joinQueue(vincent.id, 3, 1, "Bar Seating");
+  }
+
+  test("gives each priority its own prices", () => {
+    expect(getSkipPrices("high")).toEqual({ perSpot: 6, front: 40 });
+    expect(getSkipPrices("medium")).toEqual({ perSpot: 5, front: 30 });
+    expect(getSkipPrices("low")).toEqual({ perSpot: 3, front: 20 });
+    // anything unexpected falls back to the cheapest prices
+    expect(getSkipPrices(undefined)).toEqual({ perSpot: 3, front: 20 });
+  });
+
+  test("sends the line's prices with the queue entry", () => {
+    const third = createBarQueue();
+
+    expect(getQueueEntry(third.id).skipPrices).toEqual({ perSpot: 5, front: 30 });
+  });
+
+  test("charges medium prices in a medium priority line", () => {
+    const third = createBarQueue();
+
+    const result = purchaseQueueAdvance(third.id, "spots", 1);
+
+    expect(result.skips[0]).toMatchObject({ from: 3, to: 2, price: 5 });
+  });
+
+  test("uses the new price after the admin changes the priority", () => {
+    const third = createBarQueue();
+    db.prepare("UPDATE services SET priority = 'low' WHERE id = 3").run();
+
+    const result = purchaseQueueAdvance(third.id, "front");
+
+    expect(result.skips[0]).toMatchObject({ from: 3, to: 1, price: 20 });
   });
 });

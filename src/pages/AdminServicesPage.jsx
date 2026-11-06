@@ -5,10 +5,11 @@ import './AdminServicesPage.css'
 // Services now come from the backend (GET /api/services, see server/routes/services.js).
 // They live in the services table (server/data/db.js seeds the starting ones).
 
-// TODO: contact prof about what "priority level" is supposed to mean for a service.
-// The assignment 2 checklist requires the field but never explains it. For now it only decides
-// the order of the list on this page (high first). It might be meant to control which
-// line gets a free table first, which would be backend logic later.
+// Priority level does two things:
+// 1. the order of the list on this page (high first)
+// 2. how much bribing costs in that service's line, high costs the most
+//    (SKIP_PRICES in server/logic/queueLogic.js)
+// The assignment 2 checklist requires the field but never explains it, so still worth checking with the prof.
 // Lower number = shown higher up the list. kinda mid but whatever
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 }
 
@@ -340,7 +341,7 @@ function AdminServicesPage() {
               )}
             </div>
 
-            {/* TODO: contact prof about what priority level should do (see PRIORITY_RANK at the top) */}
+            {/* priority = list order + bribe price (see the comment at the top) */}
             <div className="service-field">
               <label htmlFor="service-priority" className="service-label">
                 Priority level <span className="service-required">*</span>
@@ -359,7 +360,7 @@ function AdminServicesPage() {
               {errors.priority ? (
                 <p className="service-error">{errors.priority}</p>
               ) : (
-                <p className="service-hint">High-priority services are listed first</p>
+                <p className="service-hint">Higher priority is listed first and costs more to skip the line</p>
               )}
             </div>
 

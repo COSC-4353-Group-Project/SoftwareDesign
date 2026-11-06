@@ -6,8 +6,19 @@ import { notifyQueueJoined, notifyAlmostReady } from "./notificationLogic.js";
 import { createHistory, updateHistory } from "./historyLogic.js";
 import { getUserById } from "./authLogic.js";
 
-const PRICE_PER_SPOT = 3;
-const FRONT_OF_LINE_PRICE = 20;
+// JUSTIN: bribe prices depend on the service's priority level (set on AdminServicesPage),
+// so skipping the line for an in-demand table costs more. Whole dollars so the page never shows cents.
+// The Queue Status page gets these from the entry (skipPrices), so this is the only place to change them.
+const SKIP_PRICES = {
+  high: { perSpot: 6, front: 40 },
+  medium: { perSpot: 5, front: 30 },
+  low: { perSpot: 3, front: 20 },
+};
+
+// prices for a service's priority, low prices if the priority is missing
+export function getSkipPrices(priority) {
+  return SKIP_PRICES[priority] ?? SKIP_PRICES.low;
+}
 
 // THU: convert sql queue entry to proper format
 function toQueueEntry(row) {
@@ -278,19 +289,20 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
     }
 
     const from = currentIndex + 1;
+    const prices = getSkipPrices(getServiceById(serviceId)?.priority);
     let to;
     let price;
     let label;
 
     if (mode === "front") {
       to = 1;
-      price = FRONT_OF_LINE_PRICE;
+      price = prices.front;
       label = "Front of line";
     } else if (mode === "spots") {
       // regular skips cannot reach #1 spot and must cost less than front of line
       const maxSpots = Math.min(
         from - 2,
-        Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1,
+        Math.ceil(prices.front / prices.perSpot) - 1,
       );
 
       if (!Number.isInteger(spots) || spots < 1 || spots > maxSpots) {
@@ -299,7 +311,7 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
       }
 
       to = from - spots;
-      price = spots * PRICE_PER_SPOT;
+      price = spots * prices.perSpot;
       label = `Skip ${spots} spot${spots === 1 ? "" : "s"}`;
     } else {
       db.exec("ROLLBACK");
@@ -420,6 +432,8 @@ export function getQueueEntry(entryId) {
     estimatedWaitMinutes:
       position > 0 ? estimateWaitForService(entry.serviceId, position) : 0,
     minutesPerParty: service?.duration ?? 0,
+    // what bribing costs in this line, for the "Move up in line" panel
+    skipPrices: getSkipPrices(service?.priority),
   };
 }
 

@@ -200,10 +200,9 @@ function Details({ entry }) {
   );
 }
 
-//  Skip panel (pay to move up, bribetime, change these for values. )
-
-const PRICE_PER_SPOT = 3;
-const FRONT_OF_LINE_PRICE = 20;
+//  Skip panel (pay to move up, bribetime)
+// JUSTIN: prices come from the backend now (entry.skipPrices), they depend on the service's
+// priority level. To change them, edit SKIP_PRICES in server/logic/queueLogic.js.
 
 // "#5 goes into #3 · 30 min 18 min" line under each option
 function WaitChange({ from, to, minutesPerParty }) {
@@ -216,7 +215,7 @@ function WaitChange({ from, to, minutesPerParty }) {
   );
 }
 
-function SkipPanel({ position, minutesPerParty, onPurchase }) {
+function SkipPanel({ position, minutesPerParty, prices, onPurchase }) {
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState(""); // '', 'spots', or 'front'
   const [spots, setSpots] = useState(1);
@@ -231,7 +230,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
   //
   const maxSpots = Math.min(
     position - 2,
-    Math.ceil(FRONT_OF_LINE_PRICE / PRICE_PER_SPOT) - 1,
+    Math.ceil(prices.front / prices.perSpot) - 1,
   );
   // the line keeps moving so a number picked earlier might be too big now
   const spotCount = Math.min(spots, maxSpots);
@@ -243,14 +242,14 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
       label: `Skip ${spotCount} spot${spotCount === 1 ? "" : "s"}`,
       from: position,
       to: position - spotCount,
-      price: spotCount * PRICE_PER_SPOT,
+      price: spotCount * prices.perSpot,
     };
   } else if (choice === "front") {
     skip = {
       label: "Front of line",
       from: position,
       to: 1,
-      price: FRONT_OF_LINE_PRICE,
+      price: prices.front,
     };
   }
   // THU:
@@ -285,8 +284,8 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
         <span className="skip-heading">
           <span className="skip-title">Move up in line</span>
           <span className="skip-subtitle">
-            {maxSpots > 0 ? `${formatPrice(PRICE_PER_SPOT)} per spot · ` : ""}
-            {formatPrice(FRONT_OF_LINE_PRICE)} for front of line
+            {maxSpots > 0 ? `${formatPrice(prices.perSpot)} per spot · ` : ""}
+            {formatPrice(prices.front)} for front of line
           </span>
         </span>
         <ChevronDown
@@ -340,7 +339,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
                   </span>
                 </span>
                 <span className="skip-price">
-                  {formatPrice(spotCount * PRICE_PER_SPOT)}
+                  {formatPrice(spotCount * prices.perSpot)}
                 </span>
               </label>
             )}
@@ -368,7 +367,7 @@ function SkipPanel({ position, minutesPerParty, onPurchase }) {
                 />
               </span>
               <span className="skip-price">
-                {formatPrice(FRONT_OF_LINE_PRICE)}
+                {formatPrice(prices.front)}
               </span>
             </label>
           </fieldset>
@@ -618,6 +617,7 @@ export default function QueueStatusPage() {
           <SkipPanel
             position={entry.position}
             minutesPerParty={entry.minutesPerParty}
+            prices={entry.skipPrices}
             onPurchase={handleSkip}
           />
         </div>

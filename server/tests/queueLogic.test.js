@@ -178,7 +178,7 @@ describe("admin reorder and BribeSmart", () => {
     expect(moveQueueEntry(999, -1)).toBeUndefined();
   });
 
-  test("skips a spot for $3 and records the purchase in History", () => {
+  test("skips a spot for $6 (high priority) and records the purchase in History", () => {
     join(2);
     join(3);
     const third = join(4);
@@ -190,15 +190,15 @@ describe("admin reorder and BribeSmart", () => {
     expect(result.skips[0]).toMatchObject({
       from: 3,
       to: 2,
-      price: 3,
+      price: 6,
     });
 
     expect(
       store.history.find((h) => h.queueEntryId === third.id).bribe,
-    ).toBe(3);
+    ).toBe(6);
   });
 
-  test("moves to front for $20 and serves the new first party", () => {
+  test("moves to front for $40 (high priority) and serves the new first party", () => {
     join(2);
     join(3);
     const third = join(4);
@@ -210,7 +210,7 @@ describe("admin reorder and BribeSmart", () => {
     expect(result.skips[0]).toMatchObject({
       from: 3,
       to: 1,
-      price: 20,
+      price: 40,
     });
 
     expect(serveNext().id).toBe(third.id);
@@ -218,7 +218,7 @@ describe("admin reorder and BribeSmart", () => {
     expect(
       store.history.find((h) => h.queueEntryId === third.id),
     ).toMatchObject({
-      bribe: 20,
+      bribe: 40,
       status: "Done",
     });
   });
