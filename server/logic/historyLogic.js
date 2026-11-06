@@ -63,8 +63,3 @@ export function updateHistory(id, body) {
     }
     return getHistoryById(id)
 }
-
-export function deleteHistory(id){
-  const result = db.prepare('DELETE FROM queue_history WHERE id = ?').run(id)
-  return result.changes > 0
-}
