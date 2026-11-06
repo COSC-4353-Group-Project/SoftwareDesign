@@ -28,7 +28,31 @@ export const db = new DatabaseSync(DB_FILE)
 db.exec('PRAGMA foreign_keys = ON')
 
 // Create any tables that don't exist yet.
-db.exec(readFileSync(path.join(import.meta.dirname, 'schema.sql'), 'utf8'))
+const SCHEMA = readFileSync(path.join(import.meta.dirname, 'schema.sql'), 'utf8')
+db.exec(SCHEMA)
+
+// JUSTIN: notifications got 2 new types (passed_by, table_ready) and an is_read column.
+// CREATE TABLE IF NOT EXISTS won't change a table that's already there, and sqlite can't edit a CHECK,
+// so an older notifications table gets rebuilt once: rename it, make the new one, copy the rows over.
+// Old rows get is_read = 0 (the default).
+const notificationColumns = db.prepare('PRAGMA table_info(notifications)').all()
+
+if (!notificationColumns.some((column) => column.name === 'is_read')) {
+  db.exec('BEGIN')
+  try {
+    db.exec('ALTER TABLE notifications RENAME TO notifications_old')
+    db.exec(SCHEMA) // makes the new notifications table, everything else already exists
+    db.exec(`
+      INSERT INTO notifications (id, user_id, queue_entry_id, type, title, body, created_at)
+      SELECT id, user_id, queue_entry_id, type, title, body, created_at FROM notifications_old;
+      DROP TABLE notifications_old;
+    `)
+    db.exec('COMMIT')
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
+}
 
 // THU: CREATE TABLE IF NOT EXISTS does not update existing tables
 const entryColumns = db.prepare('PRAGMA table_info(queue_entries)').all()

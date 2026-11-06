@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Bell, ListOrdered, LogOut } from 'lucide-react'
+import { ListOrdered, LogOut } from 'lucide-react'
 import RoleSwitch from './RoleSwitch.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import './AppLayout.css' // same top bar look as the user side, so reuse those styles instead of copying them
 import './AdminLayout.css' // only the admin-only extras (the "Staff" tag)
 
@@ -82,9 +83,8 @@ export default function AdminLayout() {
             {/* demo switch, "staff" side is highlighted because admin side*/}
             <RoleSwitch current="staff" showStaff={true} />
 
-            <button type="button" className="icon-btn" title="Notifications">
-              <Bell size={16} />
-            </button>
+            {/* staff only get notifications if they're in a line themselves, same bell as the user side */}
+            <NotificationBell />
 
             <div className="top-bar-user">
               <span className="avatar">{staff.name[0].toUpperCase()}</span>

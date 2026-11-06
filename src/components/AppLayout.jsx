@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bell, ListOrdered, LogOut } from 'lucide-react'
+import { ListOrdered, LogOut } from 'lucide-react'
 import RoleSwitch from './RoleSwitch.jsx'
+import NotificationBell from './NotificationBell.jsx'
 import './AppLayout.css'
 
 const APP_NAME = 'BribeQueue' // placeholder until prof says ok
@@ -96,9 +97,7 @@ export default function AppLayout() {
             {/* "user" side is highlighted because we're in the user layout. Staff half only for staff. */}
             <RoleSwitch current="user" showStaff={isStaff} />
 
-            <button type="button" className="icon-btn" title="Notifications">
-              <Bell size={16} />
-            </button>
+            <NotificationBell />
 
             <div className="top-bar-user">
               <span className="avatar">{name[0].toUpperCase()}</span>

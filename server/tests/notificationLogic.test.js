@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, test} from 'vitest'
 import { db, resetDatabase } from '../data/db.js'
-import {notifyQueueJoined, notifyAlmostReady, listNotifications} from '../logic/notificationLogic'
+import {notifyQueueJoined, notifyAlmostReady, listNotifications, notifyPassedBy, notifyTableReady, markNotificationsRead, countPassedBy} from '../logic/notificationLogic'
 
 // A4: notifications live in the database now, so these use the seeded data from db.js:
 // user 1 = Admin, user 2 = Justin, queue entries 1-3 are Justin's past visits.
@@ -75,5 +75,54 @@ describe('notifyAlmostReady', () => {
         notifyAlmostReady(queue)
         notifyAlmostReady(queue)
         expect(listNotifications(2)).toHaveLength(1)
+    })
+})
+
+describe('notifyPassedBy / notifyTableReady', () => {
+    test('Passed by tells the user their new spot', () => {
+        const notification = notifyPassedBy({userId: 2, id: 1}, 4)
+
+        expect(notification).toMatchObject({
+            type: 'passed_by',
+            title: 'Someone paid to skip ahead of you',
+            body: "You're now #4 in line",
+            isRead: false
+        })
+    })
+
+    test('Table ready names the service', () => {
+        const notification = notifyTableReady({userId: 2, id: 1}, 'Patio')
+
+        expect(notification).toMatchObject({
+            type: 'table_ready',
+            title: 'Your table is ready',
+            body: 'Patio · head to the host stand'
+        })
+    })
+})
+
+describe('markNotificationsRead', () => {
+    test('Marks all of one user\'s notifications as read', () => {
+        notifyQueueJoined({userId: 2, id: 1, position: 1}, 'Patio')
+        notifyQueueJoined({userId: 2, id: 2, position: 1}, 'Patio')
+        notifyQueueJoined({userId: 1, id: 3, position: 1}, 'Patio')
+
+        markNotificationsRead(2)
+
+        expect(listNotifications(2).every((notif) => notif.isRead)).toBe(true)
+        // Admin's is untouched
+        expect(listNotifications(1)[0].isRead).toBe(false)
+    })
+})
+
+describe('countPassedBy', () => {
+    test('Counts only passed_by notifications for that entry', () => {
+        notifyPassedBy({userId: 2, id: 1}, 2)
+        notifyPassedBy({userId: 2, id: 1}, 3)
+        notifyPassedBy({userId: 2, id: 2}, 2)
+        notifyQueueJoined({userId: 2, id: 1, position: 1}, 'Patio')
+
+        expect(countPassedBy(1)).toBe(2)
+        expect(countPassedBy(3)).toBe(0)
     })
 })

@@ -47,7 +47,7 @@ function formatQueueEntry(entry) {
     wait: `${entry.estimatedWaitMinutes}m`,
     status: entry.status === "served" ? "done" : entry.status,
     paid: (entry.skips ?? []).reduce((total, skip) => total + skip.price, 0),
-    passedBy: 0,
+    passedBy: entry.passedBy ?? 0, // JUSTIN: real count from the passed_by notifications now
     position: entry.position,
   };
 }
