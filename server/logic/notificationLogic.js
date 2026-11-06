@@ -1,19 +1,36 @@
-import { store } from "../data/store.js";
+import { db } from "../data/db.js";
+
+// A4: notifications are saved in the notifications table now instead of store.notifications,
+// so they're still there after a server restart.
+
+// A row from the notifications table, turned into the shape the dashboard already uses.
+function toNotification(row) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    entryId: row.queue_entry_id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    createdAt: row.created_at,
+  };
+}
 
 // make a notif for user
 function createNotification(userId, entryId, type, title, body) {
-  const notification = {
-    id: Math.max(0, ...store.notifications.map((item) => item.id)) + 1,
-    userId,
-    entryId,
-    type,
-    title,
-    body,
-    createdAt: new Date().toISOString(),
-  };
+  const result = db
+    .prepare(
+      `
+    INSERT INTO notifications (user_id, queue_entry_id, type, title, body, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `,
+    )
+    .run(userId, entryId, type, title, body, new Date().toISOString());
 
-  store.notifications.push(notification);
-  return notification;
+  const row = db
+    .prepare("SELECT * FROM notifications WHERE id = ?")
+    .get(result.lastInsertRowid);
+  return toNotification(row);
 }
 
 // notify when joined
@@ -34,11 +51,15 @@ export function notifyAlmostReady(queue) {
 
     if (position > 3) return;
 
-    const alreadyNotified = store.notifications.some(
-      (item) =>
-        item.entryId === entry.id &&
-        item.type === "almost_ready",
-    );
+    // .get() gives back undefined when there's no matching row
+    const alreadyNotified = db
+      .prepare(
+        `
+      SELECT id FROM notifications
+      WHERE queue_entry_id = ? AND type = 'almost_ready'
+    `,
+      )
+      .get(entry.id);
 
     if (alreadyNotified) return;
 
@@ -52,8 +73,10 @@ export function notifyAlmostReady(queue) {
   });
 }
 
+// newest first
 export function listNotifications(userId) {
-  return store.notifications
-    .filter((item) => item.userId === userId)
-    .sort((a, b) => b.id - a.id);
+  const rows = db
+    .prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC")
+    .all(userId);
+  return rows.map(toNotification);
 }

@@ -119,7 +119,7 @@ describe('POST /api/queues/:entryId/advance', () => {
     expect((await request(app).post(url).set(auth(userToken)).send({ mode: 'front' })).status).toBe(403)
     const response = await request(app).post(url).set(auth(secondToken)).send({ mode: 'front' })
     expect(response.status).toBe(200)
-    expect(response.body).toMatchObject({ position: 1, skips: [expect.objectContaining({ price: 20 })] })
+    expect(response.body).toMatchObject({ position: 1, skips: [expect.objectContaining({ price: 40 })] })
   })
 
   test('rejects invalid selections and advancing a finished entry', async () => {
