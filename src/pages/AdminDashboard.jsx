@@ -103,8 +103,8 @@ function AdminDashboard(){
                             return ( // returns allow for the creation of variables (isSkip)
                             <div className={isSkip ? "admin-skip-box" : "admin-stats-box"} key = {item.id}>
                                 <p className={isSkip ? "admin-skip-text" : "admin-stats-text"}>{item.name}</p>
-                                <h2>{isSkip ? `$${item.statistics}` : item.statistics}</h2>
-                                <p className={isSkip ? "admin-skip-text" : "admin-stats-text"}>{item.description}</p>
+                                <h2>{isSkip ? `$${item.statistic}` : item.statistic}</h2>
+                                <p className={isSkip ? "admin-skip-text" : "admin-stats-text"}>{item.descript_stat}{item.description}</p>
                             </div>
                             )
                         })

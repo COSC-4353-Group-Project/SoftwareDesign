@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listadminDashItem, getAdminItemById, createAdminItem, updateAdminItem} from '../logic/adminDashLogic.js'
+import { listadminDashItem, getAdminItemById} from '../logic/adminDashLogic.js'
 
 const router = Router()
 
@@ -26,18 +26,6 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
     const item = createAdminItem(req.body)
     res.status(201).json(item)
-})
-
-router.put('/:id', (req, res) => {
-    const id = Number(req.params.id)
-    if (!Number.isInteger(id)) {
-        return res.status(400).json({ error: 'Admin Item id must be a whole number.' })
-    }
-    if (!getAdminItemById(id)) {
-        return res.status(404).json({ error: 'Item not found.' })
-    }
-
-    res.json(updateAdminItem(id, req.body))
 })
 
 

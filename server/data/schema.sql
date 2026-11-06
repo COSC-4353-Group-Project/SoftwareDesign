@@ -170,12 +170,54 @@ SELECT
     services.is_open AS is_open
 FROM services;
 
--- first iteration of the admin dashboard table
+-- Anaya: first iteration of the admin dashboard table
+
+-- This admin dashboard table more acts as an anchor for the view
 
 CREATE TABLE IF NOT EXISTS admin_dash (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(name) BETWEEN 1 AND 100),
-    statistic INTEGER,
     description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
     isSkip INTEGER NOT NULL DEFAULT 0 CHECK (isSkip IN (0, 1))
 ) STRICT;
+
+
+-- Second iteration of admin dashboard table (table + view)
+
+-- This view is created on the admin dashboard page to make sure it can be updated based on other table queries since they are summaries of data
+CREATE VIEW IF NOT EXISTS admin_dash_view AS -- learned about CASE which is just a if-then-else type statement 
+SELECT
+    admin_dash.id AS id,
+    admin_dash.name AS name,
+    admin_dash.description AS description,
+    admin_dash.isSkip AS isSkip,
+
+    -- Case 1: calculate each main stat for the admin items
+
+    CASE
+      WHEN admin_dash.name = 'Parties Waiting' THEN (SELECT COUNT(*) FROM queue_entries
+      WHERE status = 'waiting')
+
+      WHEN admin_dash.name = 'Open Services' THEN (SELECT COUNT(*) FROM services 
+      WHERE is_open = 1)
+
+      WHEN admin_dash.name = 'Seated Today' THEN (SELECT COUNT(*) FROM queue_entries
+      WHERE status='served' AND date(joined_at) = date('now', 'localtime')) -- date('now') is similar to CURDATE() in SQL
+
+      WHEN admin_dash.name = 'Skip Revenue Today' THEN (SELECT COALESCE(SUM(price), 0) FROM queue_skips
+      WHERE date(created_at, 'localtime') = date('now', 'localtime'))
+
+    END AS statistic, -- Holds the value for each calculated statistic in every admin item in the view
+
+    -- Case 2: calculate sub-stats for admin items that have it
+
+    CASE
+      WHEN admin_dash.name = 'Parties Waiting' THEN (SELECT COALESCE(SUM(party_size), 0) FROM queue_entries
+      WHERE status = 'waiting' OR status = 'served')
+
+      WHEN admin_dash.name = 'Skip Revenue Today' THEN (SELECT COUNT(*) FROM queue_skips
+      WHERE date(created_at, 'localtime') = date('now', 'localtime'))
+    
+    END AS descript_stat -- Holds the value for each calculated statistic for specifically 2 admin items in the view, the other 2 are set as NULL
+
+    FROM admin_dash;

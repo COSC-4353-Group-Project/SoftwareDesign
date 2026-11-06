@@ -130,15 +130,15 @@ function seedDatabase() {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
 
-  // Anaya: testing for proper connection to frontend
+  // Anaya: seeded blocks in the admin dashboard!
   const addAdmininfo = db.prepare(`
-    INSERT INTO admin_dash (id, name, statistic, description, isSkip)
-    VALUES (?, ?, ?, ?, ?)`)
+    INSERT INTO admin_dash (id, name, description, isSkip)
+    VALUES (?, ?, ?, ?)`)
 
-  addAdmininfo.run(1, 'Parties Waiting', 28, '79 guests total', 0)
-  addAdmininfo.run(2, 'Open Services', 3, 'Accepting new guests', 0)
-  addAdmininfo.run(3, 'Seated Today', 420, 'Across All Services', 0)
-  addAdmininfo.run(4, 'Skip Revenue Today', 69, '7 guests paid to skip', 1)
+  addAdmininfo.run(1, 'Parties Waiting', ' guests total', 0)
+  addAdmininfo.run(2, 'Open Services', 'Accepting new guests', 0)
+  addAdmininfo.run(3, 'Seated Today', 'Across All Services', 0)
+  addAdmininfo.run(4, 'Skip Revenue Today',' guest(s) paid to skip', 1)
 
 }
 
