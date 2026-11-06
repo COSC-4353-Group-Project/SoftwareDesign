@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { listuserDash, getUserItemById, createUserItem, updateUserItem } from '../logic/userDashLogic.js'
+import { listuserDash, getUserItemById } from '../logic/userDashLogic.js'
 
 const router = Router()
 
@@ -23,22 +23,22 @@ router.get('/:id', (req, res) => {
     res.json(user)
 })
 
-router.post('/', (req, res) => {
-    const user = createUserItem(req.body)
-    res.status(201).json(user)
-})
+// router.post('/', (req, res) => {
+//     const user = createUserItem(req.body)
+//     res.status(201).json(user)
+// })
 
-router.put('/:id', (req, res) => {
-    const id = Number(req.params.id)
-    if (!Number.isInteger(id)) {
-        return res.status(400).json({ error: 'Service id must be a whole number.' })
-    }
-    if (!getServiceById(id)) {
-        return res.status(404).json({ error: 'Service not found.' })
-    }
+// router.put('/:id', (req, res) => {
+//     const id = Number(req.params.id)
+//     if (!Number.isInteger(id)) {
+//         return res.status(400).json({ error: 'Service id must be a whole number.' })
+//     }
+//     if (!getServiceById(id)) {
+//         return res.status(404).json({ error: 'Service not found.' })
+//     }
 
-    res.json(updateUserItem(id, req.body))
-})
+//     res.json(updateUserItem(id, req.body))
+// })
 
 
 

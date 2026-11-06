@@ -138,7 +138,7 @@ function UserDashboard() {
                   </p>
                  <div className="wait-card-stats">
                    <span className="wait-stat">
-                     <Users size={14} /> {item.inLine} in line
+                     <Users size={14} /> {item.inLine ?? 0} in line
                    </span>
                    <span className="wait-stat">
                      <Clock size={14} /> {item.duration} mins
