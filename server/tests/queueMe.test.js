@@ -1,7 +1,6 @@
 import request from "supertest";
 import { beforeEach, describe, expect, test } from "vitest";
 import app from "../app.js";
-import { resetStore } from "../data/store.js";
 import { db, resetDatabase } from "../data/db.js";
 import { loginUser } from "../logic/authLogic.js";
 
@@ -11,7 +10,6 @@ import { loginUser } from "../logic/authLogic.js";
 let token;
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
   token = loginUser("Justin Hendrix", "7135550123").token;
 });

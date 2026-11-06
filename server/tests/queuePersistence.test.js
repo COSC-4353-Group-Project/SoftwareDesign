@@ -2,7 +2,6 @@ import request from "supertest";
 import { beforeEach, describe, expect, test } from "vitest";
 import app from "../app.js";
 import { db, resetDatabase } from "../data/db.js";
-import { resetStore } from "../data/store.js";
 import { loginUser, registerUser } from "../logic/authLogic.js";
 import {
   joinQueue,
@@ -21,7 +20,6 @@ const VALID_JOIN = {
 };
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
 });
 
@@ -56,10 +54,8 @@ describe("SQLite queue persistence", () => {
     expect(saved.status).toBe("waiting");
   });
 
-  test("retrieves a saved entry without relying on store.queueEntries", () => {
+  test("retrieves a saved entry straight from the database", () => {
     const joined = joinQueue(2, 1, 2, "Dine-in");
-
-    resetStore();
 
     const saved = getQueueEntry(joined.id);
 

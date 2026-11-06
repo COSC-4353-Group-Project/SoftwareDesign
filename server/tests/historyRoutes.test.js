@@ -1,15 +1,15 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
-import { resetStore } from '../data/store.js'
+import { resetDatabase } from '../data/db.js'
 
-// Route tests for /api/history. The starting data has 3 history rows (see data/store.js).
+// Route tests for /api/history. The starting data has 3 history rows (seeded in data/db.js).
 
 beforeEach(() => {
-  resetStore()
+  resetDatabase()
 })
 
-// A valid history row, same shape the store uses
+// A valid history row, same shape the API returns
 const NEW_ROW = { service: 'Patio', date: '10-15-2026', bribe: 5, status: 'Done' }
 
 describe('GET /api/history', () => {

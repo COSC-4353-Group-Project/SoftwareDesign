@@ -2,7 +2,6 @@ import request from "supertest";
 import { beforeEach, describe, expect, test } from "vitest";
 import app from "../app.js";
 import { db, resetDatabase } from "../data/db.js";
-import { resetStore } from "../data/store.js";
 import { registerUser, loginUser } from "../logic/authLogic.js";
 import {
   joinQueue,
@@ -14,7 +13,6 @@ import {
 } from "../logic/queueLogic.js";
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
 });
 

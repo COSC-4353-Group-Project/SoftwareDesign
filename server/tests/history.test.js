@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { resetStore } from "../data/store.js";
 import { db, resetDatabase } from "../data/db.js";
 import {
   listHistory,
@@ -13,7 +12,6 @@ import {
 } from "../logic/queueLogic.js";
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
 
   const addCredential = db.prepare(

@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { hashPassword } from '../logic/passwordLogic.js'
 
-// The database for Assignment 4. This replaces store.js.
+// The database for Assignment 4. This replaced store.js (the in-memory arrays from A3),
+// which has been deleted now that everything is saved here.
 // node:sqlite is built into Node (no package to install). Every call is synchronous,
-// so logic functions can keep returning values directly, just like with store.js.
+// so logic functions can keep returning values directly, the same way they did in A3.
 //
 // How to use it in a logic file:
 //   import { db } from '../data/db.js'
@@ -91,7 +92,7 @@ function linkServiceQueues() {
 const ADMIN_PHONE_HASH = hashPassword('9035550100')
 const JUSTIN_PHONE_HASH = hashPassword('7135550123')
 
-// Starting data, the same as the seeds in store.js. Ids are given so they match A3
+// Starting data, the same seeds A3 had in store.js. Ids are given so they match A3
 // (admin is user 1, Justin is user 2, services 1-4).
 function seedDatabase() {
   const addCredentials = db.prepare(
@@ -114,7 +115,7 @@ function seedDatabase() {
   addService.run(3, 'Bar Seating', 'First-come bar stools. Bartender Service', 20, 'medium', 1)
   addService.run(4, 'Patio', 'Outdoor tables. Closed when it rains.', 40, 'low', 0)
 
-  // Justin's past visits, so the history page has something to show (seedHistory in store.js).
+  // Justin's past visits, so the history page has something to show (was seedHistory in store.js).
   const addEntry = db.prepare(`
     INSERT INTO queue_entries
       (id, service_id, user_id, party_size, seating_preference, position, initial_position, status, joined_at)
@@ -217,8 +218,8 @@ if (count === 0) {
 // THU: link service queues after database init
 linkServiceQueues()
 
-// Empties every table and puts the starting data back. Tests call this before each test,
-// the same way they called resetStore().
+// Empties every table and puts the starting data back. Tests call this before each test
+// (it replaced resetStore() from A3).
 // Children are deleted before their parents, otherwise the foreign keys block the delete.
 // THU: reset database records in one transaction
 // Delete child records before parent records to preserve integrity

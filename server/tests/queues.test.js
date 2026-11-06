@@ -1,7 +1,6 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
-import { resetStore } from '../data/store.js'
 import { resetDatabase } from '../data/db.js'
 import { loginUser, registerUser } from '../logic/authLogic.js'
 
@@ -9,7 +8,6 @@ let adminToken, userToken, secondToken
 const valid = { serviceId: 1, partySize: 2, seatingPreference: 'Dine-in' }
 
 beforeEach(() => {
-  resetStore()
   resetDatabase()
   adminToken = loginUser('Admin', '9035550100').token
   userToken = loginUser('Justin Hendrix', '7135550123').token

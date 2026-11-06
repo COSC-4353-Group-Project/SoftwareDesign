@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { db, resetDatabase } from "../data/db.js";
-import { resetStore } from "../data/store.js";
 import { getHistoryById } from "../logic/historyLogic.js";
 
 // BUG FIX (Justin, 11-06): the History checks used to read store.history, which the queue doesn't
@@ -21,7 +20,6 @@ import {
 } from "../logic/queueLogic.js";
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
 
   const addCredential = db.prepare(

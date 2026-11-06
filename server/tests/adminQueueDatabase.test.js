@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { db, resetDatabase } from "../data/db.js";
-import { resetStore } from "../data/store.js";
 import { registerUser } from "../logic/authLogic.js";
 import {
   joinQueue,
@@ -13,7 +12,6 @@ import {
 } from "../logic/queueLogic.js";
 
 beforeEach(() => {
-  resetStore();
   resetDatabase();
 });
 

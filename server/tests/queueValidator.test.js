@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { resetStore } from '../data/store.js'
+import { resetDatabase } from '../data/db.js'
 import { validateJoinQueue } from '../validators/queueValidator.js'
 
-beforeEach(() => resetStore())
+beforeEach(() => resetDatabase())
 
 const valid = { serviceId: 1, partySize: 2, seatingPreference: 'Dine-in' }
 
