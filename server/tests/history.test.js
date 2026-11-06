@@ -1,66 +1,94 @@
-import {beforeEach, describe, expect, test} from 'vitest'
-import { resetStore } from '../data/store'
-import {createHistory, getHistoryById, listHistory, updateHistory} from '../logic/historyLogic.js'
-
-//More or less another copy and paste but for History stuff
+import { beforeEach, describe, expect, test } from "vitest";
+import { resetStore } from "../data/store.js";
+import { db, resetDatabase } from "../data/db.js";
+import {
+  listHistory,
+  getHistoryById,
+} from "../logic/historyLogic.js";
+//Copied from `queueLogic.js` and removed any unused functions
+import {
+  joinQueue,
+  serveQueueEntry,
+  purchaseQueueAdvance,
+} from "../logic/queueLogic.js";
 
 beforeEach(() => {
-    resetStore()
-})
+  resetStore();
+  resetDatabase();
 
-describe('listHistory', () => {
-    test('Returns history list', () => {
-        //Mock entry has 3 items, expected to have 3
-        expect(listHistory()).toHaveLength(3)
-    })
-})
+  const addCredential = db.prepare(
+    "INSERT INTO user_credentials (id, phone_hash, role) VALUES (?, ?, ?)",
+  );
 
-describe('getHistoryById', () => {
-    test('Finds a history that exists', () => {
-        expect(getHistoryById(1).service).toBe('Dine-in · Party of 1–2')
-    })
+  const addProfile = db.prepare(
+    "INSERT INTO user_profiles (user_id, full_name, phone, sms_opt_in) VALUES (?, ?, ?, ?)",
+  );
 
-    test('Returns undefined for an ID that does not exist', () => {
-        expect(getHistoryById(999)).toBeUndefined()
-    })
-})
+  for (const [id, name, phone] of [
+    [3, "Anaya", "7135550999"],
+    [4, "Vincent", "7135550888"],
+    [5, "Maria", "7135550777"],
+  ]) {
+    addCredential.run(id, "test-only-hash", "user");
+    addProfile.run(id, name, phone, 0);
+  }
+});
 
-//Valid history
-const NEW_HIST = {
-    service: "Backdoor Seating",
-    date: '10-15-2026',
-    bribe: 86.25,
-    status: 'Entered'
+function join(userId, serviceId = 1, partySize = 2, seating = "Dine-in") {
+  return joinQueue(userId, serviceId, partySize, seating);
 }
 
-describe('createHistory', () => {
-    test('Adds history with next ID', () => {
-        const history = createHistory(NEW_HIST)
-        expect(history.id).toBe(4)
-        expect(listHistory()).toHaveLength(4)
-        expect(getHistoryById(4).service).toBe('Backdoor Seating')
-    })
+describe("listHistory", () => {
+  test("Returns seed history entries and newly added queue entries", () => {
+    //Seed data already includes 3 history items from db.js
+    expect(listHistory().length).toBeGreaterThanOrEqual(3);
 
-    test('Trims extra spaces off name', () => {
-        const history = createHistory({...NEW_HIST, service: '   Booth    '})
-        expect(history.service).toBe('Booth')
-    })
+    const entry = join(2);
+    const historyList = listHistory();
 
-    test('Ignore fields a History does not have', () => {
-        const history = createHistory({...NEW_HIST, id: 2345, present: false})
-        expect(history.id).toBe(4)
-        expect(history.present).toBeUndefined()
-    })
-})
+    expect(historyList.some((h) => h.id === entry.id)).toBe(true);
+  });
+});
 
-describe('updateHistory', () => {
-    test('Replaces the Fields and keeps ID', () => {
-        const history = updateHistory(3, {...NEW_HIST, service: 'Balcony'})
-        expect(history.id).toBe(3)
-        expect(history.service).toBe('Balcony')
-    })
+describe("getHistoryById", () => {
+  test("Finds an existing history from database", () => {
+    const entry = join(3);
+    const history = getHistoryById(entry.id);
 
-    test('Returns undefined for an ID that does not exist', () => {
-        expect(updateHistory(6734, NEW_HIST)).toBeUndefined()
-    })
-})
+    expect(history).toMatchObject({
+      id: entry.id,
+      userId: 3,
+      service: "Dine-in · Party of 1–2",
+      status: "waiting",
+      bribe: 0,
+    });
+  });
+
+  test("Returns undefined for an ID that does not exist", () => {
+    expect(getHistoryById(999)).toBeUndefined();
+  });
+});
+
+describe("History Status and Bribe Tracking", () => {
+  test("Status updates in history", () => {
+    const entry = join(2);
+    
+    //Serve the entry
+    serveQueueEntry(entry.id);
+
+    const history = getHistoryById(entry.id);
+    expect(history.status).toBe("served");
+  });
+
+  test("Tracks bribe totals correctly in history view", () => {
+    join(1);
+    join(2);
+    const third = join(3);
+
+    //Bribe
+    purchaseQueueAdvance(third.id, "front");
+
+    const history = getHistoryById(third.id);
+    expect(history.bribe).toBe(40);
+  });
+});
