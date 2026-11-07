@@ -64,10 +64,17 @@ function AdminDashboard(){
     const [adminDashItems, setadminDashItems] = useState([])
     const [loading, setLoading] = useState(true)
     useEffect(() => {
-        fetch('/api/adminDash')
+        // JUSTIN: the stats are staff-only now, so send the login token (same as the admin queue page)
+        fetch('/api/adminDash', {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        })
         .then((res) => res.json())
         .then((data => {
-            setadminDashItems(data)
+            // JUSTIN: if the login ran out the server sends { error: ... } instead of a list,
+            // and .map() below would crash the page, so only keep it when it's a list
+            if (Array.isArray(data)) {
+                setadminDashItems(data)
+            }
             setLoading(false)
         }))
         .catch((err) => {

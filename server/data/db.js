@@ -130,7 +130,17 @@ function seedDatabase() {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(2, 'Front of line', 6, 1, 20, '2026-09-19 19:07:00')
 
-  // Anaya: seeded blocks in the admin dashboard!
+  seedAdminDash()
+}
+
+// Anaya: seeded blocks in the admin dashboard!
+// BUG FIX (Justin, 11-06): this used to run only when the database was brand new, so a
+// bribesmart.db made before these cards existed had an empty admin dashboard, and one made
+// before the view kept the old hardcoded descriptions ("79 guests total" -> "479 guests total").
+// The 4 cards are fixed labels, not data anyone saves, so they're rewritten on every start.
+function seedAdminDash() {
+  db.exec('DELETE FROM admin_dash')
+
   const addAdmininfo = db.prepare(`
     INSERT INTO admin_dash (id, name, description, isSkip)
     VALUES (?, ?, ?, ?)`)
@@ -139,7 +149,6 @@ function seedDatabase() {
   addAdmininfo.run(2, 'Open Services', 'Accepting new guests', 0)
   addAdmininfo.run(3, 'Seated Today', 'Across All Services', 0)
   addAdmininfo.run(4, 'Skip Revenue Today',' guest(s) paid to skip', 1)
-
 }
 
 // A line of made up guests waiting right now, so the queue pages have people in them.
@@ -217,6 +226,7 @@ if (count === 0) {
 }
 // THU: link service queues after database init
 linkServiceQueues()
+seedAdminDash()
 
 // Empties every table and puts the starting data back. Tests call this before each test
 // (it replaced resetStore() from A3).

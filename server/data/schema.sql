@@ -185,7 +185,12 @@ CREATE TABLE IF NOT EXISTS admin_dash (
 -- Second iteration of admin dashboard table (table + view)
 
 -- This view is created on the admin dashboard page to make sure it can be updated based on other table queries since they are summaries of data
-CREATE VIEW IF NOT EXISTS admin_dash_view AS -- learned about CASE which is just a if-then-else type statement 
+
+-- BUG FIX (Justin, 11-06): CREATE VIEW IF NOT EXISTS never replaces a view that's already in
+-- bribesmart.db, so fixes to the math below would never reach an existing database.
+-- A view stores no rows (it's just a saved SELECT), so dropping and remaking it on every start is safe.
+DROP VIEW IF EXISTS admin_dash_view;
+CREATE VIEW admin_dash_view AS -- learned about CASE which is just a if-then-else type statement 
 SELECT
     admin_dash.id AS id,
     admin_dash.name AS name,
@@ -201,8 +206,10 @@ SELECT
       WHEN admin_dash.name = 'Open Services' THEN (SELECT COUNT(*) FROM services 
       WHERE is_open = 1)
 
+      -- BUG FIX (Justin, 11-06): joined_at is saved in UTC, so it needs 'localtime' too (like the skips below).
+      -- Without it, anyone seated after ~6pm Houston time counted as "tomorrow" and Seated Today missed them.
       WHEN admin_dash.name = 'Seated Today' THEN (SELECT COUNT(*) FROM queue_entries
-      WHERE status='served' AND date(joined_at) = date('now', 'localtime')) -- date('now') is similar to CURDATE() in SQL
+      WHERE status='served' AND date(joined_at, 'localtime') = date('now', 'localtime')) -- date('now') is similar to CURDATE() in SQL
 
       WHEN admin_dash.name = 'Skip Revenue Today' THEN (SELECT COALESCE(SUM(price), 0) FROM queue_skips
       WHERE date(created_at, 'localtime') = date('now', 'localtime'))
@@ -212,8 +219,10 @@ SELECT
     -- Case 2: calculate sub-stats for admin items that have it
 
     CASE
+      -- BUG FIX (Justin, 11-06): this also added up every party ever served, so the card said
+      -- "0 parties waiting / 4 guests total" with an empty line. Only count guests still waiting.
       WHEN admin_dash.name = 'Parties Waiting' THEN (SELECT COALESCE(SUM(party_size), 0) FROM queue_entries
-      WHERE status = 'waiting' OR status = 'served')
+      WHERE status = 'waiting')
 
       WHEN admin_dash.name = 'Skip Revenue Today' THEN (SELECT COUNT(*) FROM queue_skips
       WHERE date(created_at, 'localtime') = date('now', 'localtime'))

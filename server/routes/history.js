@@ -3,33 +3,33 @@
 
 import { Router } from "express";
 import {
-  createHistory,
   getHistoryById,
   listHistory,
-  updateHistory,
+  listHistoryForUser,
 } from "../logic/historyLogic.js";
-import { hasErrors, validateHistory } from "../validators/historyValidator.js";
-import { requireLogin } from "../middleware/auth.js";
+import { requireAdmin, requireLogin } from "../middleware/auth.js";
+
+// BUG FIX (Justin, 11-06):
+// - Removed POST and PUT. History is the queue_history view, so there's nothing to create or edit;
+//   both routes crashed with a 500 (see historyLogic.js).
+// - GET / and GET /:id had no login check, so anyone could read every guest's visits.
+//   They're staff-only now. Guests use GET /mine, which only returns their own rows.
 
 const router = Router();
 
-// GET /api/services
-router.get("/", (req, res) => {
+// GET /api/history   every guest's history (staff only)
+router.get("/", requireAdmin, (req, res) => {
   res.json(listHistory());
 });
 
 // GET /api/history/mine
 // THU: return records for logged-in user
 router.get("/mine", requireLogin, (req, res) => {
-  const history = listHistory()
-    .filter((item) => item.userId === req.user.id)
-    .sort((a, b) => b.id - a.id);
-
-  res.json(history);
+  res.json(listHistoryForUser(req.user.id));
 });
 
-// GET /api/services/:id
-router.get("/:id", (req, res) => {
+// GET /api/history/:id   (staff only)
+router.get("/:id", requireAdmin, (req, res) => {
   // URL params always arrive as strings, so turn it into a number first
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
@@ -44,43 +44,6 @@ router.get("/:id", (req, res) => {
   }
 
   res.json(history);
-});
-
-// POST /api/history   body: { name, description, duration, priority, isOpen }
-router.post("/", (req, res) => {
-  const errors = validateHistory(req.body);
-  if (hasErrors(errors)) {
-    // fields has one message per field, so the page can show each under its input
-    return res
-      .status(400)
-      .json({ error: "Some fields are invalid.", fields: errors });
-  }
-
-  const history = createHistory(req.body);
-  // 201 = something new was created
-  res.status(201).json(history);
-});
-
-// PUT /api/services/:id   same body as POST, replaces the service's fields
-router.put("/:id", (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id)) {
-    return res
-      .status(400)
-      .json({ error: "History id must be a whole number." });
-  }
-  if (!getHistoryById(id)) {
-    return res.status(404).json({ error: "History not found." });
-  }
-
-  const errors = validateHistory(req.body);
-  if (hasErrors(errors)) {
-    return res
-      .status(400)
-      .json({ error: "Some fields are invalid.", fields: errors });
-  }
-
-  res.json(updateHistory(id, req.body));
 });
 
 export default router;

@@ -23,8 +23,10 @@ export function listadminDashItem() {
     return rows.map(toadmin_dash)
 }
 
+// BUG FIX (Justin, 11-06): this only selected id, so /api/adminDash/1 came back as { id: 1, isSkip: false }
+// with no name or numbers. It selects the same columns as the list now.
 export function getAdminItemById(id) {
-    const row = db.prepare(`SELECT id FROM admin_dash_view WHERE id = ?`).get(id)
+    const row = db.prepare(`SELECT id, name, description, isSkip, statistic, descript_stat FROM admin_dash_view WHERE id = ?`).get(id)
     if (!row) {
         return undefined
     }
