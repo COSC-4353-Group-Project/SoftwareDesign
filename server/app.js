@@ -1,4 +1,6 @@
 import express from 'express'
+import fs from 'node:fs'
+import path from 'node:path'
 import authRouter from './routes/auth.js'
 import servicesRouter from './routes/services.js'
 import queuesRouter from './routes/queues.js'
@@ -30,6 +32,24 @@ app.use('/api/userDash', userDashRouter)
 app.use('/api/adminDash', adminDashRouter)
 
 // Any /api path that didn't match a route above if they forgot to add it. 
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found.' })
+})
+
+// Hosting (Render): the same server also sends the built React pages from dist/
+// (made by `npm run build`), so the site and the API share one URL.
+// Locally and in tests dist/ usually doesn't exist, so this part is skipped.
+const DIST = path.resolve('dist')
+if (fs.existsSync(path.join(DIST, 'index.html'))) {
+  app.use(express.static(DIST))
+  // page URLs like /dashboard aren't real files, so send index.html and let React Router show the page
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') return next()
+    res.sendFile(path.join(DIST, 'index.html'))
+  })
+}
+
+// Anything else that didn't match
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found.' })
 })
