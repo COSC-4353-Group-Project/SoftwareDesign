@@ -137,10 +137,33 @@
   white-space: nowrap;
 }
 
-/* hide the nav links and user name on phones. unsure if this works because the code is stolen XD */
+/* phones: hide the user name to save room */
+/* JUSTIN BUG FIX (11-06): this used to hide .top-bar-nav too, so on a phone there was no way to get to
+   My Queue, History, or the admin pages (AdminLayout uses the same classes).
+   Now the links drop to their own row under the logo instead of disappearing. */
 @media (max-width: 639px) {
-  .top-bar-nav,
   .top-bar-user {
     display: none;
+  }
+
+  /* let the bar grow to 2 rows */
+  .top-bar-inner {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 8px;
+    row-gap: 6px;
+  }
+
+  /* order: 3 puts the links after the logo and the right-side icons, width: 100% gives them the whole row */
+  .top-bar-nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto; /* if the links are ever wider than the phone, they scroll sideways instead of spilling out */
+  }
+
+  .nav-link {
+    white-space: nowrap;
   }
 }

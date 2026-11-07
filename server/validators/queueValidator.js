@@ -37,14 +37,20 @@ export function validateJoinQueue(body) {
       errors.serviceId = "This service is currently closed.";
     } else if (!errors.partySize && !errors.seatingPreference) {
       // match service to seating and party size
-      const expectedId =
-        body.seatingPreference === "Bar Seating"
-          ? 3
-          : body.partySize <= 2
-            ? 1
-            : 2;
+      // JUSTIN BUG FIX (11-06): this only allowed services 1, 2 and 3, so an open Patio or a
+      // service the admin added could never be joined. Any open service works now:
+      // - Dine-in (1 and 2) still has to match the party size
+      // - the bar (3) is Bar Seating, every other service is a table (Dine-in)
+      const isDineIn = body.serviceId === 1 || body.serviceId === 2;
+      const expectedSeating = body.serviceId === 3 ? "Bar Seating" : "Dine-in";
 
-      if (body.serviceId !== expectedId) {
+      if (isDineIn) {
+        const expectedId = body.partySize <= 2 ? 1 : 2;
+        if (body.serviceId !== expectedId || body.seatingPreference !== "Dine-in") {
+          errors.serviceId =
+            "Service does not match the selected party size and seating.";
+        }
+      } else if (body.seatingPreference !== expectedSeating) {
         errors.serviceId =
           "Service does not match the selected party size and seating.";
       }
