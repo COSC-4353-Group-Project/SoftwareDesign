@@ -2,21 +2,81 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./JoinQueue.css";
 
+// JUSTIN BUG FIX (11-06): the seating choices used to be a fixed list (Dine-in, Bar Seating),
+// so opening Patio, closing the bar, or adding a service on the admin page never showed up here.
+// Now they're built from the services that are open right now:
+// - "Dine-in" is services 1 and 2, picked by party size (1–2 guests -> 1, 3–6 -> 2),
+//   and only shows if the one for this party size is open
+// - every other open service (Bar Seating, Patio, anything the admin adds) is its own choice
+function seatingOptions(services, partySize) {
+  const options = [];
+
+  const dineInId = partySize <= 2 ? 1 : 2;
+  const dineIn = services.find((service) => service.id === dineInId);
+  if (dineIn && dineIn.isOpen) {
+    options.push({ label: "Dine-in", serviceId: dineInId, seating: "Dine-in" });
+  }
+
+  for (const service of services) {
+    if (service.isOpen && service.id !== 1 && service.id !== 2) {
+      options.push({
+        label: service.name,
+        serviceId: service.id,
+        // the database only knows 2 kinds of seating: the bar, or a table (which Patio etc. are)
+        seating: service.id === 3 ? "Bar Seating" : "Dine-in",
+      });
+    }
+  }
+
+  return options;
+}
+
 function JoinQueue() {
   const navigate = useNavigate();
   const [partySize, setPartySize] = useState(2);
-  const [seating, setSeating] = useState("Dine-in");
+  // the label of the seating choice the guest clicked
+  const [choice, setChoice] = useState("Dine-in");
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
   const [queue, setQueue] = useState(null);
   const [loadingQueue, setLoadingQueue] = useState(true);
   const [queueError, setQueueError] = useState("");
 
-  // pick service based on user's selection
-  const serviceId = seating === "Bar Seating" ? 3 : partySize <= 2 ? 1 : 2;
+  // JUSTIN: load the services once so the choices match what's open
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const response = await fetch("/api/services");
+        if (response.ok) {
+          setServices(await response.json());
+        }
+      } catch {
+        // server is off: no choices, the page says nothing is open
+      }
+      setLoadingServices(false);
+    }
+    loadServices();
+  }, []);
+
+  const options = seatingOptions(services, partySize);
+  // if the clicked choice isn't available anymore (e.g. party got bigger and that Dine-in is closed),
+  // fall back to the first open one
+  const selected = options.find((option) => option.label === choice) || options[0];
+  // pick service based on user's selection (undefined when nothing is open)
+  const serviceId = selected ? selected.serviceId : undefined;
+  const seating = selected ? selected.seating : "Dine-in";
 
   // retrieve queue info when service changes
   useEffect(() => {
+    // nothing open to show
+    if (!serviceId) {
+      setQueue(null);
+      setLoadingQueue(false);
+      return;
+    }
+
     const controller = new AbortController();
 
     async function fetchQueueSummary() {
@@ -151,22 +211,27 @@ function JoinQueue() {
                 select Dine-in.
               </p>
               <div className="join-queue-options">
-                {["Dine-in", "Bar Seating"].map((option) => (
+                {options.map((option) => (
                   <label
-                    key={option}
-                    className={`join-queue-option${seating === option ? " selected" : ""}`}
+                    key={option.label}
+                    className={`join-queue-option${selected === option ? " selected" : ""}`}
                   >
                     <input
                       type="radio"
                       name="seating"
-                      value={option}
-                      checked={seating === option}
-                      onChange={() => setSeating(option)}
+                      value={option.label}
+                      checked={selected === option}
+                      onChange={() => setChoice(option.label)}
                     />
-                    <span>{option}</span>
+                    <span>{option.label}</span>
                   </label>
                 ))}
               </div>
+              {!loadingServices && options.length === 0 && (
+                <p className="join-queue-description" role="alert">
+                  Nothing is open for a party of {partySize} right now.
+                </p>
+              )}
             </fieldset>
           </section>
         </div>

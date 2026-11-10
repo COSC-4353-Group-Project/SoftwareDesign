@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { resetDatabase } from '../data/db.js'
 import { validateJoinQueue } from '../validators/queueValidator.js'
+import { createService, updateService } from '../logic/serviceLogic.js'
 
 beforeEach(() => resetDatabase())
 
@@ -43,6 +44,16 @@ describe('validateJoinQueue', () => {
     expect(validateJoinQueue({ ...valid, serviceId: 2 })).toHaveProperty('serviceId')
     expect(validateJoinQueue({ ...valid, serviceId: 3 })).toHaveProperty('serviceId')
     expect(validateJoinQueue({ serviceId: 1, partySize: 4, seatingPreference: 'Dine-in' })).toHaveProperty('serviceId')
+  })
+
+  // JUSTIN: services besides 1–3 used to be impossible to join, even when open
+  test('accepts an open Patio or a new service as table seating', () => {
+    updateService(4, { name: 'Patio', description: 'Outdoor tables.', duration: 40, priority: 'low', isOpen: true })
+    const booth = createService({ name: 'Booth', description: 'Corner booths.', duration: 50, priority: 'medium', isOpen: true })
+
+    expect(validateJoinQueue({ serviceId: 4, partySize: 4, seatingPreference: 'Dine-in' })).toEqual({})
+    expect(validateJoinQueue({ serviceId: booth.id, partySize: 2, seatingPreference: 'Dine-in' })).toEqual({})
+    expect(validateJoinQueue({ serviceId: 4, partySize: 4, seatingPreference: 'Bar Seating' })).toHaveProperty('serviceId')
   })
 
   test('can report multiple invalid fields in the same request', () => {
