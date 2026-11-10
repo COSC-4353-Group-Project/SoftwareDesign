@@ -17,6 +17,10 @@ const SERVICE_QUEUES = {
   4: "patio",
 };
 
+// JUSTIN (A4+): how often to reload the queues, so new joins, skips and leaves show up
+// without the admin refreshing the page
+const REFRESH_EVERY_MS = 5000;
+
 const STATUS_LABELS = {
   waiting: "Waiting",
   done: "Done",
@@ -138,6 +142,21 @@ function AdminQueuesPage() {
     fetchQueues()
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+
+    // JUSTIN (A4+): then reload every REFRESH_EVERY_MS. Search, filters and the selected
+    // party are their own state, so they stay put when the list reloads.
+    const timer = setInterval(() => {
+      // tab is in the background: skip it, the next check after they come back catches up
+      if (document.hidden) {
+        return;
+      }
+      fetchQueues().catch(() => {
+        // a missed reload isn't worth an error message, keep showing the last list
+      });
+    }, REFRESH_EVERY_MS);
+
+    // stop reloading when the admin leaves this page
+    return () => clearInterval(timer);
   }, []);
 
   // Queue filters work now, pretty much all states

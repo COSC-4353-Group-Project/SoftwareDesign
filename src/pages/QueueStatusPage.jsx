@@ -15,6 +15,9 @@ import "./QueueStatusPage.css";
 // logged-in user's spot, and shows "not in a queue" if they don't have one.
 
 const ALMOST_READY_AT = 3; // positions 1-3 count as "almost ready"
+// JUSTIN (A4+): how often to ask the server for this spot again, so the position, wait and
+// surge prices stay current without refreshing the page (same idea as the notification bell)
+const REFRESH_EVERY_MS = 5000;
 
 //  Helpers for the minutes format and waittime.
 
@@ -115,7 +118,10 @@ function PositionCard({ entry }) {
       className={almostReady ? "position-card almost-ready" : "position-card"}
     >
       <p className="position-label">Your position</p>
-      <p className="position-number">#{entry.position}</p>
+      {/* position is 0 once an admin serves them, so show "Ready" instead of "#0" */}
+      <p className="position-number">
+        {entry.position > 0 ? `#${entry.position}` : "Ready"}
+      </p>
 
       <div className="position-meta">
         <span>
@@ -527,6 +533,47 @@ export default function QueueStatusPage() {
     return () => controller.abort();
   }, []);
 
+  // JUSTIN (A4+): keep the page live. Every REFRESH_EVERY_MS, ask for this entry again.
+  // It asks for the entry by id instead of /me, because /me only finds WAITING entries:
+  // once an admin serves them, /me says "not in a queue", but this still gets the entry
+  // back with status 'served', so the page can switch to "Table ready".
+  // entryId and isWaiting are plain values, so the timer only restarts when one of them
+  // changes (a different entry, or they stop waiting). Once served, the timer stops.
+  const entryId = entry?.id;
+  const isWaiting = entry?.status === "waiting";
+
+  useEffect(() => {
+    if (!entryId || !isWaiting) {
+      return;
+    }
+
+    async function refreshEntry() {
+      // tab is in the background: don't bother the server, it'll catch up when they come back
+      if (document.hidden) {
+        return;
+      }
+      try {
+        const response = await fetch(`/api/queues/${entryId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        if (!response.ok) {
+          return; // keep showing what we have, the next check will try again
+        }
+        const data = await response.json();
+        // an admin cancelled them: show the "not in a queue" message
+        setEntry(data.status === "cancelled" ? null : data);
+      } catch {
+        // server is unreachable: keep showing what we have
+      }
+    }
+
+    const timer = setInterval(refreshEntry, REFRESH_EVERY_MS);
+    // stop when they leave the page or the entry changes
+    return () => clearInterval(timer);
+  }, [entryId, isWaiting]);
+
   // no backend yet, so just update the local copy new position add to the skips list
   // function handleSkip(skip) {
   //   const purchase = { ...skip, at: new Date().toISOString() };
@@ -669,7 +716,10 @@ export default function QueueStatusPage() {
         {/* sidebar, should expand with more info if needed (downwards) */}
         <aside className="queue-sidebar">
           <Details entry={entry} />
-          <CancelButton label="Leave queue" onConfirm={handleLeave} />
+          {/* nothing to leave once they've been served */}
+          {isWaiting && (
+            <CancelButton label="Leave queue" onConfirm={handleLeave} />
+          )}
           <p className="back-link">
             <Link to="/dashboard">Back to dashboard</Link>
           </p>
