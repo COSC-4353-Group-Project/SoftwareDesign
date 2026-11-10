@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom"; // useLocation to read queue info from JoinQueue
-import { Check, ChevronDown, Clock, Crown, Users, Zap } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Clock,
+  Crown,
+  TrendingUp,
+  Users,
+  Zap,
+} from "lucide-react";
 import "./QueueStatusPage.css";
 
 // JUSTIN BACKEND STOOF: MOCK_ENTRY is gone. The page asks GET /api/queues/me for the
@@ -202,7 +210,32 @@ function Details({ entry }) {
 
 //  Skip panel (pay to move up, bribetime)
 // JUSTIN: prices come from the backend now (entry.skipPrices), they depend on the service's
-// priority level. To change them, edit SKIP_PRICES in server/logic/queueLogic.js.
+// priority level. To change them, edit server/logic/skipPricingLogic.js.
+// A4+: they also surge when the line is long or people are skipping a lot (the smart feature).
+// skipPrices.surgePercent is how much higher than normal, skipPrices.reasons says why.
+
+// the "Surge pricing +40%" box, only shows up when prices are above normal
+function SurgeNotice({ prices }) {
+  if (prices.surgePercent <= 0) {
+    return null;
+  }
+
+  return (
+    <div className="skip-surge">
+      <p className="skip-surge-title">
+        <TrendingUp size={14} /> Surge pricing: +{prices.surgePercent}%
+      </p>
+      <ul className="skip-surge-reasons">
+        {prices.reasons.map((reason) => (
+          <li key={reason}>{reason}</li>
+        ))}
+      </ul>
+      <p className="skip-surge-note">
+        Prices go back down as the line gets shorter and fewer people skip.
+      </p>
+    </div>
+  );
+}
 
 // "#5 goes into #3 · 30 min 18 min" line under each option
 function WaitChange({ from, to, minutesPerParty }) {
@@ -286,6 +319,8 @@ function SkipPanel({ position, minutesPerParty, prices, onPurchase }) {
           <span className="skip-subtitle">
             {maxSpots > 0 ? `${formatPrice(prices.perSpot)} per spot · ` : ""}
             {formatPrice(prices.front)} for front of line
+            {/* so they see the surge even before opening the panel */}
+            {prices.surgePercent > 0 && ` · Surge +${prices.surgePercent}%`}
           </span>
         </span>
         <ChevronDown
@@ -296,6 +331,8 @@ function SkipPanel({ position, minutesPerParty, prices, onPurchase }) {
 
       {open && (
         <div className="skip-body">
+          <SurgeNotice prices={prices} />
+
           <fieldset className="skip-options">
             <legend className="visually-hidden">Skip options</legend>
 
@@ -521,10 +558,17 @@ export default function QueueStatusPage() {
         body: JSON.stringify({
           mode,
           ...(mode === "spots" ? { spots: skip.from - skip.to } : {}),
+          // JUSTIN (A4+): the price on the button, so the server won't charge more if it surged since
+          expectedPrice: skip.price,
         }),
       });
 
       const result = await response.json();
+
+      // the price went up while the page was open: show the new prices so they can decide again
+      if (result.priceChanged) {
+        setEntry(result.entry);
+      }
 
       if (!response.ok) {
         throw new Error(result.error || "Unable to advance queue.");

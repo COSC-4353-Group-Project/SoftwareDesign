@@ -11,6 +11,7 @@ import {
   purchaseQueueAdvance,
   getActiveQueueEntryForUser,
 } from "../logic/queueLogic.js";
+import { priceForSkip } from "../logic/skipPricingLogic.js";
 import { validateJoinQueue } from "../validators/queueValidator.js";
 import { requireLogin, requireAdmin } from "../middleware/auth.js";
 
@@ -316,7 +317,8 @@ router.post("/:entryId/advance", requireLogin, (req, res) => {
     });
   }
 
-  const { mode, spots } = req.body ?? {};
+  // expectedPrice = the price the Queue Status page showed when they clicked pay
+  const { mode, spots, expectedPrice } = req.body ?? {};
 
   if (
     !["front", "spots"].includes(mode) ||
@@ -324,6 +326,33 @@ router.post("/:entryId/advance", requireLogin, (req, res) => {
   ) {
     return res.status(400).json({
       error: "Invalid advancement selection.",
+    });
+  }
+
+  // JUSTIN (A4+): surge pricing means the price can go up while the page is open
+  // (someone else skips, or more people join). Never charge more than the price they saw.
+  // expectedPrice is optional so older callers (and the tests from A3/A4) still work.
+  if (
+    expectedPrice !== undefined &&
+    (typeof expectedPrice !== "number" || expectedPrice < 0)
+  ) {
+    return res.status(400).json({
+      error: "Expected price must be a number of dollars.",
+    });
+  }
+
+  // entry.skipPrices are today's prices (getQueueEntry works them out fresh).
+  // This handler has no await in it, so nothing else can run and change the price
+  // between this check and the purchase below.
+  const currentPrice = priceForSkip(entry.skipPrices, mode, spots);
+
+  // if the price went DOWN they just pay the lower price, only a higher price is refused
+  if (expectedPrice !== undefined && currentPrice > expectedPrice) {
+    return res.status(409).json({
+      error: `The price went up from $${expectedPrice} to $${currentPrice}. Check the new price and try again.`,
+      priceChanged: true,
+      // send the entry back so the page can show the new prices without reloading
+      entry,
     });
   }
 

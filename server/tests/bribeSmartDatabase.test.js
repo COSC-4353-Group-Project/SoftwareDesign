@@ -9,8 +9,8 @@ import {
   getQueueEntry,
   purchaseQueueAdvance,
   serveNext,
-  getSkipPrices,
 } from "../logic/queueLogic.js";
+import { getSkipPrices } from "../logic/skipPricingLogic.js";
 
 beforeEach(() => {
   resetDatabase();
@@ -106,7 +106,9 @@ describe("BribeSmart database persistence", () => {
     const saved = getQueueEntry(third.id);
 
     expect(saved.skips).toHaveLength(2);
-    expect(saved.skips.map((skip) => skip.price)).toEqual([6, 40]);
+    // JUSTIN (A4+): the first skip makes the second one surge +15% (1 skip in the last hour),
+    // so front of line costs 46 instead of 40. See skipPricingLogic.test.js for the surge rules.
+    expect(saved.skips.map((skip) => skip.price)).toEqual([6, 46]);
 
     const purchases = db.prepare(`
       SELECT COUNT(*) AS count
@@ -255,7 +257,13 @@ describe("BribeSmart prices by service priority", () => {
   test("sends the line's prices with the queue entry", () => {
     const third = createBarQueue();
 
-    expect(getQueueEntry(third.id).skipPrices).toEqual({ perSpot: 5, front: 30 });
+    // 3 parties and no skips yet, so no surge: normal medium prices
+    expect(getQueueEntry(third.id).skipPrices).toEqual({
+      perSpot: 5,
+      front: 30,
+      surgePercent: 0,
+      reasons: [],
+    });
   });
 
   test("charges medium prices in a medium priority line", () => {

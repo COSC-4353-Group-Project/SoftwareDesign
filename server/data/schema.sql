@@ -55,7 +55,11 @@ CREATE TABLE IF NOT EXISTS queue_entries (
   status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'served', 'cancelled')),
   type TEXT NOT NULL DEFAULT 'walk-in' CHECK (type IN ('walk-in', 'reservation')),
   notes TEXT NOT NULL DEFAULT '' CHECK (length(notes) <= 200),
-  joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- JUSTIN (A4+): when an admin served them. NULL while waiting or cancelled.
+  -- served_at - joined_at = how long they actually waited (for reports + average wait).
+  -- db.js adds this column to an older bribesmart.db that doesn't have it yet.
+  served_at TEXT
 ) STRICT;
 
 -- bribes. one row every time someone pays to skip (was the skips array on each entry)

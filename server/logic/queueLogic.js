@@ -9,20 +9,10 @@ import {
   countPassedBy,
 } from "./notificationLogic.js";
 import { getUserById } from "./authLogic.js";
-
-// JUSTIN: bribe prices depend on the service's priority level (set on AdminServicesPage),
-// so skipping the line for an in-demand table costs more. Whole dollars so the page never shows cents.
-// The Queue Status page gets these from the entry (skipPrices), so this is the only place to change them.
-const SKIP_PRICES = {
-  high: { perSpot: 6, front: 40 },
-  medium: { perSpot: 5, front: 30 },
-  low: { perSpot: 3, front: 20 },
-};
-
-// prices for a service's priority, low prices if the priority is missing
-export function getSkipPrices(priority) {
-  return SKIP_PRICES[priority] ?? SKIP_PRICES.low;
-}
+// JUSTIN (A4+): skip prices moved to skipPricingLogic.js. They still start from the service's
+// priority, but now surge when the line is long or lots of people are skipping (the smart feature).
+// The Queue Status page gets them from the entry (skipPrices), so that file is the only place to change them.
+import { getSurgeSkipPrices, priceForSkip } from "./skipPricingLogic.js";
 
 // THU: convert sql queue entry to proper format
 function toQueueEntry(row) {
@@ -36,6 +26,7 @@ function toQueueEntry(row) {
     initialPosition: row.initial_position,
     queueOrder: row.position,
     joinedAt: row.joined_at,
+    servedAt: row.served_at, // null until an admin serves them
     type: row.type,
     notes: row.notes,
     skips: [],
@@ -260,14 +251,15 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
     }
 
     const from = currentIndex + 1;
-    const prices = getSkipPrices(getServiceById(serviceId)?.priority);
+    // same prices the Queue Status page showed (unless the line changed since it loaded)
+    const prices = getSurgeSkipPrices(serviceId);
     let to;
     let price;
     let label;
 
     if (mode === "front") {
       to = 1;
-      price = prices.front;
+      price = priceForSkip(prices, mode);
       label = "Front of line";
     } else if (mode === "spots") {
       // regular skips cannot reach #1 spot and must cost less than front of line
@@ -282,7 +274,7 @@ export function purchaseQueueAdvance(entryId, mode, spots) {
       }
 
       to = from - spots;
-      price = spots * prices.perSpot;
+      price = priceForSkip(prices, mode, spots);
       label = `Skip ${spots} spot${spots === 1 ? "" : "s"}`;
     } else {
       db.exec("ROLLBACK");
@@ -414,8 +406,9 @@ export function getQueueEntry(entryId) {
     estimatedWaitMinutes:
       position > 0 ? estimateWaitForService(entry.serviceId, position) : 0,
     minutesPerParty: service?.duration ?? 0,
-    // what bribing costs in this line, for the "Move up in line" panel
-    skipPrices: getSkipPrices(service?.priority),
+    // what bribing costs in this line right now, for the "Move up in line" panel
+    // { perSpot, front, surgePercent, reasons }
+    skipPrices: getSurgeSkipPrices(entry.serviceId),
     // how many paying skippers jumped ahead of this party, for AdminQueuesPage
     passedBy: countPassedBy(entryId),
   };
@@ -524,15 +517,17 @@ export function getAllQueueEntries() {
 // mark entry as served
 export function serveQueueEntry(entryId) {
   // update saved queue entry
+  // JUSTIN (A4+): also save when they were served, so reports can work out how long they waited.
+  // toISOString() is UTC with a Z on the end, same format joinQueue uses for joined_at.
   const result = db
     .prepare(
       `
     UPDATE queue_entries
-    SET status = 'served'
+    SET status = 'served', served_at = ?
     WHERE id = ? AND status = 'waiting'
   `,
     )
-    .run(entryId);
+    .run(new Date().toISOString(), entryId);
 
   if (result.changes === 0) {
     return undefined;

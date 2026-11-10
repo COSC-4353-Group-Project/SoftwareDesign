@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { beforeEach, describe, expect, test } from 'vitest'
 import app from '../app.js'
-import { resetDatabase } from '../data/db.js'
+import { db, resetDatabase } from '../data/db.js'
 import { loginUser, registerUser } from '../logic/authLogic.js'
 
 let adminToken, userToken, secondToken
@@ -128,5 +128,63 @@ describe('POST /api/queues/:entryId/advance', () => {
     expect((await request(app).post(url).set(auth(secondToken)).send({ mode: 'spots', spots: 1 })).status).toBe(409)
     await request(app).delete(`/api/queues/${second.id}`).set(auth(secondToken))
     expect((await request(app).post(url).set(auth(secondToken)).send({ mode: 'front' })).status).toBe(409)
+  })
+})
+
+// JUSTIN (A4+): the page sends expectedPrice (the price it showed) so surge pricing
+// can never charge someone more than they agreed to. Service 1 front of line is normally $40.
+describe('POST /api/queues/:entryId/advance with expectedPrice', () => {
+  // a skip bought in service 1 just now, so prices surge +15% (front of line $40 -> $46)
+  function addRecentSkip(entryId) {
+    db.prepare(`
+      INSERT INTO queue_skips (queue_entry_id, label, from_position, to_position, price, created_at)
+      VALUES (?, 'Skip 1 spot', 3, 2, 6, ?)
+    `).run(entryId, new Date().toISOString())
+  }
+
+  test('buys the skip when the price still matches', async () => {
+    await join()
+    const second = (await join(secondToken)).body
+    const res = await request(app).post(`/api/queues/${second.id}/advance`)
+      .set(auth(secondToken)).send({ mode: 'front', expectedPrice: 40 })
+    expect(res.status).toBe(200)
+    expect(res.body.skips[0].price).toBe(40)
+  })
+
+  test('refuses if the price went up, sends the new prices, and leaves the line alone', async () => {
+    const first = (await join()).body
+    const second = (await join(secondToken)).body
+    const url = `/api/queues/${second.id}/advance`
+    addRecentSkip(first.id) // prices surge after the page loaded
+
+    const refused = await request(app).post(url).set(auth(secondToken)).send({ mode: 'front', expectedPrice: 40 })
+    expect(refused.status).toBe(409)
+    expect(refused.body.priceChanged).toBe(true)
+    expect(refused.body.error).toContain('$46')
+    expect(refused.body.entry.skipPrices.front).toBe(46)
+    expect(refused.body.entry.position).toBe(2) // didn't move
+    expect(refused.body.entry.skips).toHaveLength(0) // wasn't charged
+
+    // they saw the new price and tried again
+    const bought = await request(app).post(url).set(auth(secondToken)).send({ mode: 'front', expectedPrice: 46 })
+    expect(bought.status).toBe(200)
+    expect(bought.body.skips[0].price).toBe(46)
+  })
+
+  test('charges the lower price if it went down', async () => {
+    await join()
+    const second = (await join(secondToken)).body
+    const res = await request(app).post(`/api/queues/${second.id}/advance`)
+      .set(auth(secondToken)).send({ mode: 'front', expectedPrice: 55 })
+    expect(res.status).toBe(200)
+    expect(res.body.skips[0].price).toBe(40)
+  })
+
+  test('rejects an expectedPrice that is not a number of dollars', async () => {
+    await join()
+    const second = (await join(secondToken)).body
+    const url = `/api/queues/${second.id}/advance`
+    expect((await request(app).post(url).set(auth(secondToken)).send({ mode: 'front', expectedPrice: '40' })).status).toBe(400)
+    expect((await request(app).post(url).set(auth(secondToken)).send({ mode: 'front', expectedPrice: -1 })).status).toBe(400)
   })
 })

@@ -62,6 +62,12 @@ if (!entryColumns.some((column) => column.name === 'queue_id')) {
   db.exec('ALTER TABLE queue_entries ADD COLUMN queue_id INTEGER REFERENCES queues(id)')
 }
 
+// JUSTIN (A4+): same idea for served_at. Parties served before this column existed keep NULL,
+// since we never saved when they were served. Reports should skip NULLs when averaging waits.
+if (!entryColumns.some((column) => column.name === 'served_at')) {
+  db.exec('ALTER TABLE queue_entries ADD COLUMN served_at TEXT')
+}
+
 // THU: create any missing service queues and link older entries(new services will be handled  trigger)
 function linkServiceQueues() {
   db.exec(`
@@ -118,12 +124,13 @@ function seedDatabase() {
   // Justin's past visits, so the history page has something to show (was seedHistory in store.js).
   const addEntry = db.prepare(`
     INSERT INTO queue_entries
-      (id, service_id, user_id, party_size, seating_preference, position, initial_position, status, joined_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, service_id, user_id, party_size, seating_preference, position, initial_position, status, joined_at, served_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `)
-  addEntry.run(1, 1, 2, 2, 'Dine-in', 1, 4, 'served', '2026-09-17 18:30:00')
-  addEntry.run(2, 4, 2, 2, 'Dine-in', 1, 6, 'served', '2026-09-19 19:05:00')
-  addEntry.run(3, 3, 2, 1, 'Bar Seating', 1, 3, 'cancelled', '2026-09-27 21:10:00')
+  // served_at: visit 1 waited 42 min, visit 2 paid to skip so only waited 11. The cancelled one was never served.
+  addEntry.run(1, 1, 2, 2, 'Dine-in', 1, 4, 'served', '2026-09-17 18:30:00', '2026-09-17 19:12:00')
+  addEntry.run(2, 4, 2, 2, 'Dine-in', 1, 6, 'served', '2026-09-19 19:05:00', '2026-09-19 19:16:00')
+  addEntry.run(3, 3, 2, 1, 'Bar Seating', 1, 3, 'cancelled', '2026-09-27 21:10:00', null)
 
   db.prepare(`
     INSERT INTO queue_skips (queue_entry_id, label, from_position, to_position, price, created_at)
