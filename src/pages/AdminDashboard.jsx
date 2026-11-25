@@ -16,6 +16,30 @@ function formatMinutes(min) {
     return m ? `${h} hr ${m} min` : `${h} hr`
 }
 
+function getLocalTodayDateString() {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+function validateReportDateRange(startDate, endDate, todayStr) {
+    if (!startDate && !endDate) {
+        return 'Please select at least one date (start date or end date) before creating a report.'
+    }
+    if (endDate && endDate > todayStr) {
+        return 'End date cannot be after the current date. Please select a different end date.'
+    }
+    if (startDate && startDate > todayStr) {
+        return 'Start date cannot be after the current date. Please select a different start date.'
+    }
+    if (startDate && endDate && startDate > endDate) {
+        return 'Start date cannot be after end date (and end date cannot be before start date). Please choose different dates.'
+    }
+    return ''
+}
+
 function AdminDashboard(){
     // services live in state so the Open/Close button can change them
     const [services, setServices] = useState([])
@@ -83,6 +107,118 @@ function AdminDashboard(){
         })
     }, [])
 
+    // On-demand report state and handlers
+    const [startDate, setStartDate] = useState('')
+    const [endDate, setEndDate] = useState('')
+    const [report, setReport] = useState(null)
+    const [reportLoading, setReportLoading] = useState(false)
+    const [reportError, setReportError] = useState('')
+    const todayStr = getLocalTodayDateString()
+
+    async function handleCreateReport(e) {
+        e.preventDefault()
+
+        const validationMessage = validateReportDateRange(startDate, endDate, todayStr)
+        if (validationMessage) {
+            setReportError(validationMessage)
+            return
+        }
+
+        setReportLoading(true)
+        setReportError('')
+
+        try {
+            const params = new URLSearchParams()
+            if (startDate) params.set('startDate', startDate)
+            if (endDate) params.set('endDate', endDate)
+
+            const query = params.toString()
+            const url = query ? `/api/adminDash/report?${query}` : '/api/adminDash/report'
+
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            })
+            const data = await res.json()
+
+            if (!res.ok) {
+                setReportError(data.error || 'Could not generate report.')
+                return
+            }
+
+            setReport(data)
+        } catch {
+            setReportError('Could not reach the server.')
+        } finally {
+            setReportLoading(false)
+        }
+    }
+
+    function handleExportCsv() {
+        if (!report) return
+
+        const headers = [
+            'Service',
+            'Total Parties',
+            'Served',
+            'Cancelled',
+            'Avg Wait (min)',
+            'Bribe Revenue ($)',
+        ]
+
+        const rows = report.byService.map((row) => [
+            `"${String(row.serviceName).replaceAll('"', '""')}"`,
+            row.totalParties,
+            row.servedCount,
+            row.cancelledCount,
+            row.avgWaitMinutes ?? '',
+            Number(row.bribeRevenue ?? 0).toFixed(2),
+        ])
+
+        const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `bribesmart-report-${new Date().toISOString().slice(0, 10)}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
+    async function handleExportPdf() {
+        if (!report) return
+
+        try {
+            const params = new URLSearchParams()
+            if (startDate) params.set('startDate', startDate)
+            if (endDate) params.set('endDate', endDate)
+
+            const query = params.toString()
+            const url = query ? `/api/adminDash/report/pdf?${query}` : '/api/adminDash/report/pdf'
+
+            const res = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            })
+
+            if (!res.ok) {
+                setReportError('Could not download PDF report.')
+                return
+            }
+
+            const blob = await res.blob()
+            const downloadUrl = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = downloadUrl
+            link.download = `bribesmart-report-${new Date().toISOString().slice(0, 10)}.pdf`
+            link.click()
+            URL.revokeObjectURL(downloadUrl)
+        } catch {
+            setReportError('Could not reach the server to download PDF.')
+        }
+    }
 
     return(
     <div className="admin-page">
@@ -117,6 +253,138 @@ function AdminDashboard(){
                         })
                     )}
             </div>
+
+            <section className="admin-report-card">
+                <div className="admin-report-header">
+                    <div>
+                        <h2 className="admin-report-title">Reports</h2>
+                        <h4>Select an end date to receive a report from beginning to selected date</h4>
+                    </div>
+                </div>
+
+                <form className="admin-report-controls" onSubmit={handleCreateReport}>
+                    <label className="admin-report-field">
+                        <span>Start date</span>
+                        <input
+                            type="date"
+                            max={todayStr}
+                            value={startDate}
+                            onChange={(e) => {
+                                setStartDate(e.target.value)
+                                if (reportError) setReportError('')
+                            }}
+                        />
+                    </label>
+
+                    <label className="admin-report-field">
+                        <span>End date</span>
+                        <input
+                            type="date"
+                            max={todayStr}
+                            value={endDate}
+                            onChange={(e) => {
+                                setEndDate(e.target.value)
+                                if (reportError) setReportError('')
+                            }}
+                        />
+                    </label>
+
+                    <div className="admin-report-actions">
+                        <button
+                            type="submit"
+                            className="admin-service-button primary"
+                            disabled={reportLoading}
+                        >
+                            {reportLoading ? 'Generating...' : 'Create Report'}
+                        </button>
+
+                        {report && (
+                            <>
+                                <button
+                                    type="button"
+                                    className="admin-service-button outline"
+                                    onClick={handleExportCsv}
+                                >
+                                    Export CSV
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="admin-service-button outline"
+                                    onClick={handleExportPdf}
+                                >
+                                    Export PDF
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </form>
+
+                {reportError && <p className="admin-report-error">{reportError}</p>}
+
+                {report && (
+                    <div className="admin-report-results">
+                        <div className="admin-report-summary-grid">
+                            <div className="admin-report-metric">
+                                <span>Total Parties</span>
+                                <strong>{report.summary.totalParties}</strong>
+                            </div>
+                            <div className="admin-report-metric">
+                                <span>Served</span>
+                                <strong>{report.summary.servedCount}</strong>
+                            </div>
+                            <div className="admin-report-metric">
+                                <span>Cancelled</span>
+                                <strong>{report.summary.cancelledCount}</strong>
+                            </div>
+                            <div className="admin-report-metric">
+                                <span>Avg Wait</span>
+                                <strong>
+                                    {report.summary.avgWaitMinutes != null
+                                        ? formatMinutes(report.summary.avgWaitMinutes)
+                                        : 'N/A'}
+                                </strong>
+                            </div>
+                            <div className="admin-report-metric">
+                                <span>Skip Revenue</span>
+                                <strong>${Number(report.summary.totalBribeRevenue ?? 0).toFixed(2)}</strong>
+                            </div>
+                        </div>
+
+                        <div className="admin-report-table-wrap">
+                            <table className="admin-report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Service</th>
+                                        <th>Parties</th>
+                                        <th>Served</th>
+                                        <th>Cancelled</th>
+                                        <th>Avg Wait</th>
+                                        <th>Skip Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {report.byService.map((row) => (
+                                        <tr key={row.serviceId}>
+                                            <td>{row.serviceName}</td>
+                                            <td>{row.totalParties}</td>
+                                            <td>{row.servedCount}</td>
+                                            <td>{row.cancelledCount}</td>
+                                            <td>
+                                                {row.avgWaitMinutes != null
+                                                    ? formatMinutes(row.avgWaitMinutes)
+                                                    : '—'}
+                                            </td>
+                                            <td>${Number(row.bribeRevenue ?? 0).toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </section>
+
             <div>
                 <h1 className="admin-service-header">Services</h1>
                 {/* one card per service, closed services get faded out a bit */}
